@@ -2,7 +2,7 @@
 
 تاریخ: ۱۴۰۵/۰۶/۲۶ (۲۰۲۶-۰۹-۱۷)
 
-وضعیت: تأییدشده
+وضعیت: تصمیم نهایی بازار
 
 ## ۱. هدف تحقیق
 
@@ -236,4 +236,3 @@
 - [چالش AI Product Engineer](https://jobs.torob.com/ai-product-engineer)
 - [OpenRouter Models API](https://openrouter.ai/docs/api/api-reference/models/get-models)
 - [Hugging Face Leaderboard Data](https://huggingface.co/docs/hub/leaderboard-data-guide)
-
