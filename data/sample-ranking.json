@@ -1,0 +1,49 @@
+{
+  "product_name": "دوره‌یاب",
+  "query_id": "rag-working-developer-v1",
+  "scoring_version": "1.0.0",
+  "generated_from": {
+    "courses": "data/courses.json",
+    "query": "data/sample-query.json"
+  },
+  "summary": {
+    "input_courses": 8,
+    "eligible_courses": 3,
+    "excluded_courses": 5,
+    "exact_match": false,
+    "reason_fa": "برای سه گزینه‌ی باقی‌مانده، پوشش evaluation در اطلاعات عمومی قابل اثبات نیست."
+  },
+  "ranked_courses": [
+    {
+      "rank": 1,
+      "course_id": "neonlearn-ai-engineering",
+      "score": 73.7,
+      "matched_required_topics": ["rag_foundations"],
+      "unverified_required_topics": ["evaluation"],
+      "warnings_fa": ["دسترسی به منتور یا پشتیبان مشخص نیست."]
+    },
+    {
+      "rank": 2,
+      "course_id": "udemyiran-prompt-rag",
+      "score": 66.2,
+      "matched_required_topics": ["rag_foundations"],
+      "unverified_required_topics": ["evaluation"],
+      "warnings_fa": ["دسترسی به منتور یا پشتیبان مشخص نیست."]
+    },
+    {
+      "rank": 3,
+      "course_id": "jahani-langchain-fa",
+      "score": 65.4,
+      "matched_required_topics": ["rag_foundations"],
+      "unverified_required_topics": ["evaluation"],
+      "warnings_fa": ["دسترسی به منتور یا پشتیبان مشخص نیست."]
+    }
+  ],
+  "excluded_course_ids": [
+    "bardia-ai-engineering",
+    "mftsk-llm-python",
+    "tehrandata-llm",
+    "udemyiran-advanced-rag",
+    "udemyiran-langgraph"
+  ]
+}

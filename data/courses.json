@@ -1,0 +1,584 @@
+{
+  "dataset": {
+    "product_name": "دوره‌یاب",
+    "scenario": "انتخاب دوره برای ساخت و ارزیابی یک قابلیت RAG در پروژه واقعی",
+    "schema_version": "1.0.0",
+    "observed_at": "2026-09-18",
+    "record_count": 8,
+    "missing_value_policy": "اطلاعاتی که در منبع عمومی دیده نشده‌اند null هستند و به‌معنای نبود آن ویژگی نیستند."
+  },
+  "courses": [
+    {
+      "id": "udemyiran-advanced-rag",
+      "title_fa": "تکنیک‌های پیشرفته‌ی RAG",
+      "provider": "یودمی ایران",
+      "source": {
+        "url": "https://udemyiran.com/product/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D8%AA%DA%A9%D9%86%DB%8C%DA%A9%D9%87%D8%A7%DB%8C-%D9%BE%DB%8C%D8%B4%D8%B1%D9%81%D8%AA%D9%87%DB%8C-rag/",
+        "observed_at": "2026-09-18",
+        "source_type": "provider_page"
+      },
+      "localization": {
+        "teaching_language": "en",
+        "subtitle_languages": ["fa", "en"],
+        "persian_access": "subtitled"
+      },
+      "delivery": {
+        "mode": "self_paced_video",
+        "total_hours": 10.5,
+        "duration_weeks": null,
+        "hours_per_week": null,
+        "access_model": "one_time_purchase",
+        "start_date_jalali": null
+      },
+      "commercial": {
+        "price_toman": 40000,
+        "list_price_toman": 140000,
+        "price_status": "observed",
+        "certificate": null
+      },
+      "audience": {
+        "level": "advanced",
+        "prerequisite_tags": ["python_intermediate", "software_engineering", "rag_basic"],
+        "prerequisites_fa": [
+          "پایتون در سطح متوسط",
+          "تجربه‌ی مهندسی نرم‌افزار",
+          "حداقل یک پیاده‌سازی پایه‌ی RAG"
+        ]
+      },
+      "rag": {
+        "depth": "primary",
+        "topics": {
+          "rag_foundations": true,
+          "embeddings": null,
+          "vector_database": null,
+          "chunking": null,
+          "retrieval": true,
+          "hybrid_search": null,
+          "reranking": null,
+          "evaluation": null,
+          "deployment": null,
+          "observability": true,
+          "agentic_rag": true
+        }
+      },
+      "learning_experience": {
+        "hands_on_project": true,
+        "project_count": null,
+        "mentor_support": null,
+        "support_type": null
+      },
+      "data_quality": {
+        "completeness": 0.83,
+        "confidence": "high",
+        "notes": ["قیمت تخفیف‌خورده متغیر است.", "پوشش evaluation در صفحه‌ی عمومی تصریح نشده است."]
+      },
+      "evidence": [
+        {
+          "fields": ["delivery.total_hours", "localization", "commercial"],
+          "summary_fa": "صفحه‌ی دوره ۱۰٫۵ ساعت ویدیو، زیرنویس فارسی و انگلیسی و قیمت مشاهده‌شده را اعلام می‌کند."
+        },
+        {
+          "fields": ["audience", "rag.topics"],
+          "summary_fa": "صفحه، آشنایی قبلی با RAG و پایتون متوسط را پیش‌نیاز می‌داند و async، caching، tracing و الگوهای agentic را پوشش می‌دهد."
+        }
+      ]
+    },
+    {
+      "id": "udemyiran-prompt-rag",
+      "title_fa": "مهندسی درخواست و RAG برای مهندسان نرم‌افزار",
+      "provider": "یودمی ایران",
+      "source": {
+        "url": "https://udemyiran.com/product/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%D9%85%D9%87%D9%86%D8%AF%D8%B3%DB%8C-%D8%AF%D8%B1%D8%AE%D9%88%D8%A7%D8%B3%D8%AA-%D9%88-rag/",
+        "observed_at": "2026-09-18",
+        "source_type": "provider_page"
+      },
+      "localization": {
+        "teaching_language": "en",
+        "subtitle_languages": ["fa", "en"],
+        "persian_access": "subtitled"
+      },
+      "delivery": {
+        "mode": "self_paced_video",
+        "total_hours": 2,
+        "duration_weeks": null,
+        "hours_per_week": null,
+        "access_model": "one_time_purchase",
+        "start_date_jalali": null
+      },
+      "commercial": {
+        "price_toman": 50000,
+        "list_price_toman": 150000,
+        "price_status": "observed",
+        "certificate": null
+      },
+      "audience": {
+        "level": "beginner",
+        "prerequisite_tags": [],
+        "prerequisites_fa": []
+      },
+      "rag": {
+        "depth": "primary",
+        "topics": {
+          "rag_foundations": true,
+          "embeddings": null,
+          "vector_database": null,
+          "chunking": null,
+          "retrieval": true,
+          "hybrid_search": null,
+          "reranking": null,
+          "evaluation": null,
+          "deployment": null,
+          "observability": null,
+          "agentic_rag": null
+        }
+      },
+      "learning_experience": {
+        "hands_on_project": true,
+        "project_count": 1,
+        "mentor_support": null,
+        "support_type": null
+      },
+      "data_quality": {
+        "completeness": 0.76,
+        "confidence": "high",
+        "notes": ["RAG تنها بخشی از یک دوره‌ی کوتاه درباره‌ی prompt engineering است."]
+      },
+      "evidence": [
+        {
+          "fields": ["delivery.total_hours", "localization", "commercial"],
+          "summary_fa": "صفحه‌ی دوره ۲ ساعت ویدیو، زیرنویس فارسی و انگلیسی و قیمت مشاهده‌شده را اعلام می‌کند."
+        },
+        {
+          "fields": ["audience", "rag.topics", "learning_experience"],
+          "summary_fa": "دوره پیش‌نیاز الزامی ندارد، ساخت ابزار RAG با Llama و Gemini را ذکر می‌کند و یک اپلیکیشن چت‌بات می‌سازد."
+        }
+      ]
+    },
+    {
+      "id": "jahani-langchain-fa",
+      "title_fa": "آموزش LangChain به زبان فارسی — پروژه‌محور",
+      "provider": "علی جهانی",
+      "source": {
+        "url": "https://jahaniwww.com/product/%D8%AF%D9%88%D8%B1%D9%87-%D8%A2%D9%85%D9%88%D8%B2%D8%B4-langchain-%D8%A8%D9%87-%D8%B2%D8%A8%D8%A7%D9%86-%D9%81%D8%A7%D8%B1%D8%B3%DB%8C/",
+        "observed_at": "2026-09-18",
+        "source_type": "provider_page"
+      },
+      "localization": {
+        "teaching_language": "fa",
+        "subtitle_languages": [],
+        "persian_access": "native"
+      },
+      "delivery": {
+        "mode": "self_paced_video",
+        "total_hours": 1,
+        "duration_weeks": null,
+        "hours_per_week": null,
+        "access_model": "one_time_purchase",
+        "start_date_jalali": null
+      },
+      "commercial": {
+        "price_toman": 500000,
+        "list_price_toman": null,
+        "price_status": "observed",
+        "certificate": null
+      },
+      "audience": {
+        "level": "beginner",
+        "prerequisite_tags": [],
+        "prerequisites_fa": ["آشنایی بسیار مقدماتی با پایتون مفید است اما الزامی اعلام نشده است."]
+      },
+      "rag": {
+        "depth": "primary",
+        "topics": {
+          "rag_foundations": true,
+          "embeddings": null,
+          "vector_database": null,
+          "chunking": true,
+          "retrieval": true,
+          "hybrid_search": null,
+          "reranking": null,
+          "evaluation": null,
+          "deployment": true,
+          "observability": null,
+          "agentic_rag": null
+        }
+      },
+      "learning_experience": {
+        "hands_on_project": true,
+        "project_count": 1,
+        "mentor_support": null,
+        "support_type": null
+      },
+      "data_quality": {
+        "completeness": 0.78,
+        "confidence": "high",
+        "notes": ["مدت دوره در پاسخ مدرس به دیدگاه کاربر اعلام شده است."]
+      },
+      "evidence": [
+        {
+          "fields": ["commercial", "delivery.total_hours", "localization"],
+          "summary_fa": "صفحه‌ی فارسی دوره قیمت را نمایش می‌دهد و مدرس مدت تقریبی یک ساعت در پنج جلسه را اعلام کرده است."
+        },
+        {
+          "fields": ["rag.topics", "learning_experience"],
+          "summary_fa": "بارگذاری و قطعه‌بندی سند و ساخت وب‌اپلیکیشن گفت‌وگو با سند در Streamlit در سرفصل عمومی آمده است."
+        }
+      ]
+    },
+    {
+      "id": "mftsk-llm-python",
+      "title_fa": "آشنایی با مدل‌های بزرگ زبانی با پایتون",
+      "provider": "مجتمع فنی تهران — نمایندگی سیدخندان",
+      "source": {
+        "url": "https://www.mftsk.com/Course/10426?AspxAutoDetectCookieSupport=1",
+        "observed_at": "2026-09-18",
+        "source_type": "provider_page"
+      },
+      "localization": {
+        "teaching_language": "fa",
+        "subtitle_languages": [],
+        "persian_access": "native"
+      },
+      "delivery": {
+        "mode": "instructor_led",
+        "total_hours": 50,
+        "duration_weeks": 10,
+        "hours_per_week": 5,
+        "access_model": "scheduled_enrollment",
+        "start_date_jalali": "1405/07/17"
+      },
+      "commercial": {
+        "price_toman": 15000000,
+        "list_price_toman": null,
+        "price_status": "observed",
+        "certificate": null
+      },
+      "audience": {
+        "level": "intermediate",
+        "prerequisite_tags": ["python_basic"],
+        "prerequisites_fa": ["آشنایی با زبان برنامه‌نویسی پایتون"]
+      },
+      "rag": {
+        "depth": "major_module",
+        "topics": {
+          "rag_foundations": true,
+          "embeddings": null,
+          "vector_database": true,
+          "chunking": null,
+          "retrieval": true,
+          "hybrid_search": null,
+          "reranking": null,
+          "evaluation": true,
+          "deployment": null,
+          "observability": null,
+          "agentic_rag": null
+        }
+      },
+      "learning_experience": {
+        "hands_on_project": true,
+        "project_count": null,
+        "mentor_support": true,
+        "support_type": "کلاس مدرس‌محور"
+      },
+      "data_quality": {
+        "completeness": 0.88,
+        "confidence": "high",
+        "notes": ["نوع دقیق حضوری یا آنلاین در رکورد صفحه‌ی دوره صریح نیست."]
+      },
+      "evidence": [
+        {
+          "fields": ["delivery", "commercial", "audience"],
+          "summary_fa": "صفحه‌ی دوره مدت ۵۰ ساعت، جلسه‌ی هفتگی پنج‌ساعته، تاریخ شروع، شهریه و پیش‌نیاز پایتون را اعلام می‌کند."
+        },
+        {
+          "fields": ["rag.topics", "learning_experience"],
+          "summary_fa": "پیاده‌سازی و ارزیابی RAG، پایگاه داده‌ی برداری، LangChain و Streamlit در سرفصل یا توانایی‌های خروجی ذکر شده‌اند."
+        }
+      ]
+    },
+    {
+      "id": "tehrandata-llm",
+      "title_fa": "مدل‌های زبانی بزرگ و کاربرد هوش مصنوعی مولد",
+      "provider": "تهران‌دیتا",
+      "source": {
+        "url": "https://tehrandata.org/courses/llm/",
+        "observed_at": "2026-09-18",
+        "source_type": "provider_page"
+      },
+      "localization": {
+        "teaching_language": "fa",
+        "subtitle_languages": [],
+        "persian_access": "native"
+      },
+      "delivery": {
+        "mode": "hybrid_live",
+        "total_hours": 150,
+        "duration_weeks": 20,
+        "hours_per_week": null,
+        "access_model": "scheduled_enrollment",
+        "start_date_jalali": null
+      },
+      "commercial": {
+        "price_toman": null,
+        "list_price_toman": null,
+        "price_status": "contact_provider",
+        "certificate": true
+      },
+      "audience": {
+        "level": "intermediate",
+        "prerequisite_tags": ["python_basic"],
+        "prerequisites_fa": ["آشنایی اولیه با پایتون"]
+      },
+      "rag": {
+        "depth": "major_module",
+        "topics": {
+          "rag_foundations": true,
+          "embeddings": true,
+          "vector_database": true,
+          "chunking": null,
+          "retrieval": true,
+          "hybrid_search": null,
+          "reranking": null,
+          "evaluation": null,
+          "deployment": true,
+          "observability": null,
+          "agentic_rag": true
+        }
+      },
+      "learning_experience": {
+        "hands_on_project": true,
+        "project_count": null,
+        "mentor_support": true,
+        "support_type": "پشتیبان، گروه پرسش‌وپاسخ و جلسات رفع اشکال"
+      },
+      "data_quality": {
+        "completeness": 0.9,
+        "confidence": "high",
+        "notes": ["قیمت عمومی نیست و باید از ارائه‌دهنده استعلام شود.", "evaluation در صفحه‌ی عمومی به‌صورت صریح دیده نشد."]
+      },
+      "evidence": [
+        {
+          "fields": ["delivery", "learning_experience", "commercial.certificate"],
+          "summary_fa": "صفحه ۱۵۰ ساعت آموزش، جلسات آنلاین تعاملی، کارگاه و پروژه‌ی واقعی، رفع اشکال و گواهینامه را ذکر می‌کند."
+        },
+        {
+          "fields": ["rag.topics"],
+          "summary_fa": "طراحی RAG، embedding، FAISS، ChromaDB، LangChain و بهینه‌سازی عملکرد در چند ماژول صفحه آمده‌اند."
+        }
+      ]
+    },
+    {
+      "id": "bardia-ai-engineering",
+      "title_fa": "مسیر مهندسی هوش مصنوعی",
+      "provider": "Bardia.ai",
+      "source": {
+        "url": "https://bardia.ai/ai-course/",
+        "observed_at": "2026-09-18",
+        "source_type": "public_curriculum"
+      },
+      "localization": {
+        "teaching_language": "fa",
+        "subtitle_languages": [],
+        "persian_access": "native"
+      },
+      "delivery": {
+        "mode": "self_study",
+        "total_hours": 570,
+        "duration_weeks": 52,
+        "hours_per_week": 10,
+        "access_model": "public_curriculum",
+        "start_date_jalali": null
+      },
+      "commercial": {
+        "price_toman": null,
+        "list_price_toman": null,
+        "price_status": "not_published",
+        "certificate": null
+      },
+      "audience": {
+        "level": "mixed",
+        "prerequisite_tags": [],
+        "prerequisites_fa": []
+      },
+      "rag": {
+        "depth": "major_module",
+        "topics": {
+          "rag_foundations": true,
+          "embeddings": true,
+          "vector_database": true,
+          "chunking": true,
+          "retrieval": true,
+          "hybrid_search": true,
+          "reranking": true,
+          "evaluation": true,
+          "deployment": true,
+          "observability": true,
+          "agentic_rag": true
+        }
+      },
+      "learning_experience": {
+        "hands_on_project": true,
+        "project_count": 6,
+        "mentor_support": null,
+        "support_type": null
+      },
+      "data_quality": {
+        "completeness": 0.91,
+        "confidence": "high",
+        "notes": ["۵ پروژه و یک پایان‌نامه به‌عنوان ۶ خروجی عملی شمرده شده‌اند.", "قیمت یا مدل ثبت‌نام عمومی اعلام نشده است."]
+      },
+      "evidence": [
+        {
+          "fields": ["delivery", "learning_experience"],
+          "summary_fa": "صفحه مسیر ۵۲ هفته، ۵۷۰+ ساعت، حداقل ۱۰ ساعت در هفته، پنج پروژه و یک پایان‌نامه را اعلام می‌کند."
+        },
+        {
+          "fields": ["rag.topics"],
+          "summary_fa": "سرفصل عمومی chunking، hybrid search، reranking، contextual retrieval، ارزیابی RAG، Ragas و ملاحظات production را پوشش می‌دهد."
+        }
+      ]
+    },
+    {
+      "id": "neonlearn-ai-engineering",
+      "title_fa": "دوره‌ی مهندسی هوش مصنوعی",
+      "provider": "NeonLearn",
+      "source": {
+        "url": "https://www.youtube.com/watch?v=OyKf29aTepc",
+        "observed_at": "2026-09-18",
+        "source_type": "provider_video"
+      },
+      "localization": {
+        "teaching_language": "fa",
+        "subtitle_languages": [],
+        "persian_access": "native"
+      },
+      "delivery": {
+        "mode": "self_paced_video",
+        "total_hours": 12,
+        "duration_weeks": null,
+        "hours_per_week": null,
+        "access_model": "free_public",
+        "start_date_jalali": null
+      },
+      "commercial": {
+        "price_toman": 0,
+        "list_price_toman": null,
+        "price_status": "free",
+        "certificate": null
+      },
+      "audience": {
+        "level": "intermediate",
+        "prerequisite_tags": [],
+        "prerequisites_fa": []
+      },
+      "rag": {
+        "depth": "major_module",
+        "topics": {
+          "rag_foundations": true,
+          "embeddings": true,
+          "vector_database": null,
+          "chunking": null,
+          "retrieval": true,
+          "hybrid_search": null,
+          "reranking": null,
+          "evaluation": null,
+          "deployment": null,
+          "observability": null,
+          "agentic_rag": true
+        }
+      },
+      "learning_experience": {
+        "hands_on_project": true,
+        "project_count": 9,
+        "mentor_support": null,
+        "support_type": "ویدیوی عمومی"
+      },
+      "data_quality": {
+        "completeness": 0.74,
+        "confidence": "medium",
+        "notes": ["جزئیات پیش‌نیاز، پشتیبانی و ارزیابی RAG در توضیح عمومی منتشر نشده‌اند."]
+      },
+      "evidence": [
+        {
+          "fields": ["delivery", "commercial", "learning_experience"],
+          "summary_fa": "ویدیوی عمومی فارسی یک دوره‌ی ۱۲ ساعته با ۹ پروژه‌ی عملی معرفی می‌کند."
+        },
+        {
+          "fields": ["rag.topics"],
+          "summary_fa": "semantic search، embedding، LangChain و ساخت یک سیستم کامل RAG روی داده‌های پزشکی در پروژه‌ها ذکر شده‌اند."
+        }
+      ]
+    },
+    {
+      "id": "udemyiran-langgraph",
+      "title_fa": "ساخت برنامه‌های LLM با LangGraph",
+      "provider": "یودمی ایران",
+      "source": {
+        "url": "https://udemyiran.com/product/%D8%A2%D9%85%D9%88%D8%B2%D8%B4-%DA%A9%D8%AA%D8%A7%D8%A8%D8%AE%D8%A7%D9%86%D9%87-langgraph/",
+        "observed_at": "2026-09-18",
+        "source_type": "provider_page"
+      },
+      "localization": {
+        "teaching_language": "en",
+        "subtitle_languages": ["fa", "en"],
+        "persian_access": "subtitled"
+      },
+      "delivery": {
+        "mode": "self_paced_video",
+        "total_hours": 6,
+        "duration_weeks": null,
+        "hours_per_week": null,
+        "access_model": "one_time_purchase",
+        "start_date_jalali": null
+      },
+      "commercial": {
+        "price_toman": 40000,
+        "list_price_toman": 140000,
+        "price_status": "observed",
+        "certificate": null
+      },
+      "audience": {
+        "level": "advanced",
+        "prerequisite_tags": ["python_intermediate", "software_engineering", "langchain_basic"],
+        "prerequisites_fa": ["پایتون", "LangChain", "مبانی محکم مهندسی نرم‌افزار"]
+      },
+      "rag": {
+        "depth": "major_module",
+        "topics": {
+          "rag_foundations": true,
+          "embeddings": null,
+          "vector_database": null,
+          "chunking": null,
+          "retrieval": true,
+          "hybrid_search": null,
+          "reranking": null,
+          "evaluation": null,
+          "deployment": true,
+          "observability": true,
+          "agentic_rag": true
+        }
+      },
+      "learning_experience": {
+        "hands_on_project": true,
+        "project_count": null,
+        "mentor_support": null,
+        "support_type": null
+      },
+      "data_quality": {
+        "completeness": 0.84,
+        "confidence": "high",
+        "notes": ["دوره در اصل LangGraph و agentهاست و RAG یکی از ماژول‌های مهم آن است."]
+      },
+      "evidence": [
+        {
+          "fields": ["delivery", "commercial", "localization"],
+          "summary_fa": "صفحه ۶ ساعت ویدیو، زیرنویس فارسی و انگلیسی، مدرس و قیمت مشاهده‌شده را اعلام می‌کند."
+        },
+        {
+          "fields": ["audience", "rag.topics", "learning_experience"],
+          "summary_fa": "پایتون، LangChain و مهندسی نرم‌افزار پیش‌نیازند؛ Corrective RAG، Self-RAG، Adaptive RAG، LangSmith و پروژه‌های عملی ذکر شده‌اند."
+        }
+      ]
+    }
+  ]
+}

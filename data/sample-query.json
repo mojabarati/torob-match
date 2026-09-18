@@ -1,0 +1,17 @@
+{
+  "id": "rag-working-developer-v1",
+  "goal_fa": "یادگیری ساخت یک قابلیت RAG قابل ارزیابی برای استفاده در پروژه واقعی",
+  "target_level": "intermediate",
+  "current_skill_tags": ["python_intermediate", "software_engineering"],
+  "persian_access_required": true,
+  "budget_max_toman": 5000000,
+  "time_budget_total_hours": 72,
+  "max_duration_weeks": 12,
+  "hard_constraints": ["persian_access", "budget", "time", "prerequisites"],
+  "required_topics": ["rag_foundations", "evaluation"],
+  "preferences": {
+    "hands_on_project": 1.0,
+    "mentor_support": 0.6
+  },
+  "low_priority": ["certificate"]
+}

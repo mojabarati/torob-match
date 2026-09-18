@@ -51,3 +51,5 @@ doreh-yab/
 تصمیم‌های تجربه‌ی محصول در [مشخصات محصول](docs/03-product-spec.md) ثبت می‌شوند.
 
 ارزیابی عرضه‌ی دوره‌های RAG، منابع اولیه و قواعد ورود داده در [داده و رتبه‌بندی](docs/04-data-and-ranking.md) ثبت شده است.
+
+دیتاست استاندارد در [`data/courses.json`](data/courses.json)، قرارداد داده در [`data/course.schema.json`](data/course.schema.json)، رتبه‌بندی قابل توضیح در [`app/ranking.py`](app/ranking.py) و خروجی سناریوی نمونه در [`data/sample-ranking.json`](data/sample-ranking.json) قرار دارند.

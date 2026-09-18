@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mojabarati/doreh-yab/data/course.schema.json",
+  "title": "DorehYab course record",
+  "type": "object",
+  "required": [
+    "id",
+    "title_fa",
+    "provider",
+    "source",
+    "localization",
+    "delivery",
+    "commercial",
+    "audience",
+    "rag",
+    "learning_experience",
+    "data_quality"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "title_fa": { "type": "string", "minLength": 1 },
+    "provider": { "type": "string", "minLength": 1 },
+    "source": {
+      "type": "object",
+      "required": ["url", "observed_at", "source_type"],
+      "properties": {
+        "url": { "type": "string", "format": "uri" },
+        "observed_at": { "type": "string", "format": "date" },
+        "source_type": {
+          "enum": ["provider_page", "provider_video", "public_curriculum"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "localization": {
+      "type": "object",
+      "required": ["teaching_language", "persian_access"],
+      "properties": {
+        "teaching_language": { "type": ["string", "null"] },
+        "subtitle_languages": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "persian_access": {
+          "enum": ["native", "subtitled", "unknown"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "delivery": {
+      "type": "object",
+      "required": ["mode", "total_hours", "duration_weeks", "access_model"],
+      "properties": {
+        "mode": {
+          "enum": [
+            "self_paced_video",
+            "self_study",
+            "live_online",
+            "instructor_led",
+            "hybrid_live"
+          ]
+        },
+        "total_hours": { "type": ["number", "null"], "minimum": 0 },
+        "duration_weeks": { "type": ["number", "null"], "minimum": 0 },
+        "hours_per_week": { "type": ["number", "null"], "minimum": 0 },
+        "access_model": {
+          "enum": [
+            "one_time_purchase",
+            "free_public",
+            "scheduled_enrollment",
+            "public_curriculum",
+            "unknown"
+          ]
+        },
+        "start_date_jalali": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "commercial": {
+      "type": "object",
+      "required": ["price_toman", "price_status", "certificate"],
+      "properties": {
+        "price_toman": { "type": ["integer", "null"], "minimum": 0 },
+        "list_price_toman": { "type": ["integer", "null"], "minimum": 0 },
+        "price_status": {
+          "enum": ["observed", "free", "contact_provider", "not_published"]
+        },
+        "certificate": { "type": ["boolean", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "audience": {
+      "type": "object",
+      "required": ["level", "prerequisite_tags", "prerequisites_fa"],
+      "properties": {
+        "level": { "enum": ["beginner", "intermediate", "advanced", "mixed"] },
+        "prerequisite_tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "prerequisites_fa": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "rag": {
+      "type": "object",
+      "required": ["depth", "topics"],
+      "properties": {
+        "depth": { "enum": ["primary", "major_module"] },
+        "topics": {
+          "type": "object",
+          "required": [
+            "rag_foundations",
+            "embeddings",
+            "vector_database",
+            "chunking",
+            "retrieval",
+            "hybrid_search",
+            "reranking",
+            "evaluation",
+            "deployment",
+            "observability",
+            "agentic_rag"
+          ],
+          "additionalProperties": {
+            "type": ["boolean", "null"]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "learning_experience": {
+      "type": "object",
+      "required": ["hands_on_project", "project_count", "mentor_support", "support_type"],
+      "properties": {
+        "hands_on_project": { "type": ["boolean", "null"] },
+        "project_count": { "type": ["integer", "null"], "minimum": 0 },
+        "mentor_support": { "type": ["boolean", "null"] },
+        "support_type": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "data_quality": {
+      "type": "object",
+      "required": ["completeness", "confidence", "notes"],
+      "properties": {
+        "completeness": { "type": "number", "minimum": 0, "maximum": 1 },
+        "confidence": { "enum": ["high", "medium", "low"] },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fields", "summary_fa"],
+        "properties": {
+          "fields": { "type": "array", "items": { "type": "string" } },
+          "summary_fa": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
