@@ -1,0 +1,11 @@
+{
+  "query_id": "sara-rag-v2",
+  "purpose": "حساسیت‌سنجی رتبه‌بندی در برابر تغییر یک محدودیت",
+  "scenarios": [
+    {"id": "baseline", "changes": {}, "summary": {"current_matches": 3, "flexible_matches": 1, "stretch_options": 4}, "notable_effect": "هر هشت دوره قابل مشاهده‌اند."},
+    {"id": "flexible-budget-15m", "changes": {"budget": {"flexible_max_toman": 15000000}}, "summary": {"current_matches": 3, "flexible_matches": 2, "stretch_options": 3}, "notable_effect": "دورهٔ مجتمع فنی تهران از کششی به منعطف منتقل می‌شود."},
+    {"id": "rag-beginner", "changes": {"skills": {"rag": "beginner"}}, "summary": {"current_matches": 4, "flexible_matches": 1, "stretch_options": 3}, "notable_effect": "دورهٔ تکنیک‌های پیشرفتهٔ RAG به گزینهٔ متناسب فعلی تبدیل می‌شود."},
+    {"id": "langchain-beginner", "changes": {"skills": {"langchain": "beginner"}}, "summary": {"current_matches": 4, "flexible_matches": 1, "stretch_options": 3}, "notable_effect": "دورهٔ LangGraph به گزینهٔ متناسب فعلی تبدیل می‌شود."},
+    {"id": "time-52w-11h", "changes": {"time": {"flexible_deadline_weeks": 52, "flexible_hours_per_week": 11}}, "summary": {"current_matches": 3, "flexible_matches": 2, "stretch_options": 3}, "notable_effect": "مسیر Bardia.ai از کششی به منعطف منتقل می‌شود."}
+  ]
+}

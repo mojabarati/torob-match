@@ -1,49 +1,25 @@
 {
   "product_name": "دوره‌یاب",
-  "query_id": "rag-working-developer-v1",
-  "scoring_version": "1.0.0",
-  "generated_from": {
-    "courses": "data/courses.json",
-    "query": "data/sample-query.json"
-  },
-  "summary": {
-    "input_courses": 8,
-    "eligible_courses": 3,
-    "excluded_courses": 5,
-    "exact_match": false,
-    "reason_fa": "برای سه گزینه‌ی باقی‌مانده، پوشش evaluation در اطلاعات عمومی قابل اثبات نیست."
-  },
-  "ranked_courses": [
-    {
-      "rank": 1,
-      "course_id": "neonlearn-ai-engineering",
-      "score": 73.7,
-      "matched_required_topics": ["rag_foundations"],
-      "unverified_required_topics": ["evaluation"],
-      "warnings_fa": ["دسترسی به منتور یا پشتیبان مشخص نیست."]
-    },
-    {
-      "rank": 2,
-      "course_id": "udemyiran-prompt-rag",
-      "score": 66.2,
-      "matched_required_topics": ["rag_foundations"],
-      "unverified_required_topics": ["evaluation"],
-      "warnings_fa": ["دسترسی به منتور یا پشتیبان مشخص نیست."]
-    },
-    {
-      "rank": 3,
-      "course_id": "jahani-langchain-fa",
-      "score": 65.4,
-      "matched_required_topics": ["rag_foundations"],
-      "unverified_required_topics": ["evaluation"],
-      "warnings_fa": ["دسترسی به منتور یا پشتیبان مشخص نیست."]
-    }
-  ],
-  "excluded_course_ids": [
-    "bardia-ai-engineering",
-    "mftsk-llm-python",
-    "tehrandata-llm",
-    "udemyiran-advanced-rag",
-    "udemyiran-langgraph"
-  ]
+  "query_id": "sara-rag-v2",
+  "scoring_version": "2.0.0",
+  "generated_from": {"courses": "data/courses.json", "query": "data/sample-query.json"},
+  "budget_control": {"min_toman": 0, "max_toman": 30000000, "preferred_max_toman": 5000000, "flexible_max_toman": 10000000},
+  "summary": {"input_courses": 8, "visible_courses": 8, "current_matches": 3, "flexible_matches": 1, "stretch_options": 4, "insufficient_data": 0, "exact_matches": 0},
+  "groups": {
+    "current_matches": [
+      {"course_id": "jahani-langchain-fa", "score": 66.6},
+      {"course_id": "udemyiran-prompt-rag", "score": 66.5},
+      {"course_id": "neonlearn-ai-engineering", "score": 66.4}
+    ],
+    "flexible_matches": [
+      {"course_id": "tehrandata-llm", "score": 60.2, "adjustments": ["مهلت از 12 به حدود 25 هفته افزایش یابد."], "warnings": ["قیمت عمومی نیست و برای سنجش تناسب بودجه باید استعلام شود."]}
+    ],
+    "stretch_options": [
+      {"course_id": "mftsk-llm-python", "score": 88.6, "adjustments": ["حد بودجه از 10,000,000 تومان به حداقل 15,000,000 تومان افزایش یابد."]},
+      {"course_id": "bardia-ai-engineering", "score": 76.75, "adjustments": ["برای پایان در 12 هفته، حدود 47.5 ساعت در هفته لازم است.", "با 6 ساعت در هفته، حدود 95 هفته لازم است."]},
+      {"course_id": "udemyiran-langgraph", "score": 61.9, "adjustments": ["سطح langchain از none به حداقل beginner برسد."]},
+      {"course_id": "udemyiran-advanced-rag", "score": 61.85, "adjustments": ["سطح rag از none به حداقل beginner برسد."]}
+    ],
+    "insufficient_data": []
+  }
 }

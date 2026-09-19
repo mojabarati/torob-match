@@ -50,7 +50,14 @@
     },
     "delivery": {
       "type": "object",
-      "required": ["mode", "total_hours", "duration_weeks", "access_model"],
+      "required": [
+        "mode",
+        "total_hours",
+        "duration_weeks",
+        "rag_relevant_hours",
+        "rag_module_independent",
+        "access_model"
+      ],
       "properties": {
         "mode": {
           "enum": [
@@ -64,6 +71,8 @@
         "total_hours": { "type": ["number", "null"], "minimum": 0 },
         "duration_weeks": { "type": ["number", "null"], "minimum": 0 },
         "hours_per_week": { "type": ["number", "null"], "minimum": 0 },
+        "rag_relevant_hours": { "type": ["number", "null"], "minimum": 0 },
+        "rag_module_independent": { "type": ["boolean", "null"] },
         "access_model": {
           "enum": [
             "one_time_purchase",
@@ -92,13 +101,20 @@
     },
     "audience": {
       "type": "object",
-      "required": ["level", "prerequisite_tags", "prerequisites_fa"],
+      "required": ["level", "skill_requirements", "prerequisites_fa"],
       "properties": {
         "level": { "enum": ["beginner", "intermediate", "advanced", "mixed"] },
-        "prerequisite_tags": {
+        "skill_requirements": {
           "type": "array",
-          "items": { "type": "string" },
-          "uniqueItems": true
+          "items": {
+            "type": "object",
+            "required": ["skill", "minimum_level"],
+            "properties": {
+              "skill": { "type": "string", "minLength": 1 },
+              "minimum_level": { "enum": ["beginner", "intermediate", "advanced"] }
+            },
+            "additionalProperties": false
+          }
         },
         "prerequisites_fa": {
           "type": "array",

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mojabarati/doreh-yab/data/search-query.schema.json",
+  "title": "DorehYab dynamic search query",
+  "type": "object",
+  "required": ["id", "persona", "goal_fa", "persian_access_required", "budget", "time", "skills", "priorities"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "persona": { "type": "string", "minLength": 1 },
+    "goal_fa": { "type": "string", "minLength": 1 },
+    "persian_access_required": { "type": "boolean" },
+    "budget": {
+      "type": "object",
+      "required": [
+        "control_min_toman",
+        "control_max_toman",
+        "control_step_toman",
+        "preferred_max_toman",
+        "flexible_max_toman"
+      ],
+      "properties": {
+        "control_min_toman": { "const": 0 },
+        "control_max_toman": { "const": 30000000 },
+        "control_step_toman": { "type": "integer", "minimum": 1 },
+        "preferred_max_toman": { "type": "integer", "minimum": 0, "maximum": 30000000 },
+        "flexible_max_toman": { "type": "integer", "minimum": 0, "maximum": 30000000 }
+      },
+      "additionalProperties": false
+    },
+    "time": {
+      "type": "object",
+      "required": [
+        "preferred_deadline_weeks",
+        "flexible_deadline_weeks",
+        "preferred_hours_per_week",
+        "flexible_hours_per_week"
+      ],
+      "properties": {
+        "preferred_deadline_weeks": { "type": "number", "exclusiveMinimum": 0 },
+        "flexible_deadline_weeks": { "type": "number", "exclusiveMinimum": 0 },
+        "preferred_hours_per_week": { "type": "number", "exclusiveMinimum": 0 },
+        "flexible_hours_per_week": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "skills": {
+      "type": "object",
+      "additionalProperties": {
+        "enum": ["none", "beginner", "intermediate", "advanced"]
+      }
+    },
+    "priorities": {
+      "type": "object",
+      "required": ["required_topics", "hands_on_project", "mentor_support", "certificate"],
+      "properties": {
+        "required_topics": {
+          "type": "object",
+          "additionalProperties": { "enum": ["must", "high", "medium", "low"] }
+        },
+        "hands_on_project": { "enum": ["must", "high", "medium", "low", "none"] },
+        "mentor_support": { "enum": ["must", "high", "medium", "low", "none"] },
+        "certificate": { "enum": ["must", "high", "medium", "low", "none"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,52 +1,52 @@
-"""Deterministic, explainable ranking for the DorehYab prototype."""
+"""Dynamic and explainable ranking for the DorehYab prototype."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
 
+SCORING_VERSION = "2.0.0"
 MAX_SCORE = 100.0
+BUDGET_CONTROL_MIN_TOMAN = 0
+BUDGET_CONTROL_MAX_TOMAN = 30_000_000
 
 SCORE_WEIGHTS = {
-    "topic_fit": 40.0,
-    "practical_fit": 15.0,
-    "level_fit": 15.0,
+    "topic_fit": 35.0,
+    "practical_and_evaluation": 20.0,
+    "skill_fit": 15.0,
     "time_fit": 10.0,
     "budget_fit": 10.0,
     "support_fit": 5.0,
     "data_confidence": 5.0,
 }
 
-LEVEL_FIT = {
-    "beginner": {
-        "beginner": 1.0,
-        "intermediate": 0.65,
-        "advanced": 0.25,
-        "mixed": 0.9,
-    },
-    "intermediate": {
-        "beginner": 0.5,
-        "intermediate": 1.0,
-        "advanced": 0.7,
-        "mixed": 0.85,
-    },
-    "advanced": {
-        "beginner": 0.2,
-        "intermediate": 0.65,
-        "advanced": 1.0,
-        "mixed": 0.8,
-    },
+PRIORITY_FACTORS = {
+    "must": 1.0,
+    "high": 0.85,
+    "medium": 0.6,
+    "low": 0.25,
+    "none": 0.0,
 }
 
-SKILL_IMPLICATIONS = {
-    "python_advanced": {"python_advanced", "python_intermediate", "python_basic"},
-    "python_intermediate": {"python_intermediate", "python_basic"},
-    "python_basic": {"python_basic"},
+SKILL_LEVELS = {
+    "none": 0,
+    "beginner": 1,
+    "intermediate": 2,
+    "advanced": 3,
 }
+
+GROUP_ORDER = (
+    "current_matches",
+    "flexible_matches",
+    "stretch_options",
+    "insufficient_data",
+)
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -54,194 +54,391 @@ def _load_json(path: Path) -> dict[str, Any]:
         return json.load(file)
 
 
-def _expanded_skills(skill_tags: list[str]) -> set[str]:
-    expanded: set[str] = set()
-    for skill in skill_tags:
-        expanded.update(SKILL_IMPLICATIONS.get(skill, {skill}))
-    return expanded
+def _format_toman(value: int | float) -> str:
+    return f"{value:,.0f} تومان"
 
 
-def _topic_state(course: dict[str, Any], topic: str) -> bool | None:
-    return course["rag"]["topics"].get(topic)
+def _round_up_half(value: float) -> float:
+    return math.ceil(value * 2) / 2
 
 
-def _hard_filter(course: dict[str, Any], query: dict[str, Any]) -> tuple[list[str], list[str]]:
-    exclusions: list[str] = []
-    warnings: list[str] = []
-    hard_constraints = set(query.get("hard_constraints", []))
+def validate_query(query: dict[str, Any]) -> None:
+    budget = query["budget"]
+    if budget["control_min_toman"] != BUDGET_CONTROL_MIN_TOMAN:
+        raise ValueError("حد پایین کنترل بودجه باید صفر تومان باشد.")
+    if budget["control_max_toman"] != BUDGET_CONTROL_MAX_TOMAN:
+        raise ValueError("حد بالای کنترل بودجه باید ۳۰ میلیون تومان باشد.")
+    if not (
+        BUDGET_CONTROL_MIN_TOMAN
+        <= budget["preferred_max_toman"]
+        <= budget["flexible_max_toman"]
+        <= BUDGET_CONTROL_MAX_TOMAN
+    ):
+        raise ValueError("بودجه‌ی مطلوب و منعطف باید در بازه‌ی صفر تا ۳۰ میلیون مرتب باشند.")
 
-    if "persian_access" in hard_constraints and query.get("persian_access_required"):
-        access = course["localization"]["persian_access"]
-        if access == "unknown":
-            warnings.append("نوع دسترسی فارسی مشخص نیست.")
-        elif access not in {"native", "subtitled"}:
-            exclusions.append("دسترسی فارسی ندارد.")
+    time = query["time"]
+    if time["preferred_deadline_weeks"] > time["flexible_deadline_weeks"]:
+        raise ValueError("مهلت منعطف نمی‌تواند کمتر از مهلت مطلوب باشد.")
+    if time["preferred_hours_per_week"] > time["flexible_hours_per_week"]:
+        raise ValueError("ساعت هفتگی منعطف نمی‌تواند کمتر از ساعت مطلوب باشد.")
+    if any(value <= 0 for value in time.values()):
+        raise ValueError("مقادیر زمانی باید بزرگ‌تر از صفر باشند.")
 
-    if "budget" in hard_constraints:
-        max_price = query.get("budget_max_toman")
-        price = course["commercial"]["price_toman"]
-        if max_price is not None:
-            if price is None:
-                warnings.append("قیمت عمومی نیست و پیش از انتخاب باید استعلام شود.")
-            elif price > max_price:
-                exclusions.append(
-                    f"قیمت مشاهده‌شده {price:,} تومان از سقف {max_price:,} تومان بیشتر است."
-                )
+    for skill, level in query["skills"].items():
+        if level not in SKILL_LEVELS:
+            raise ValueError(f"سطح نامعتبر برای {skill}: {level}")
 
-    if "time" in hard_constraints:
-        hour_budget = query.get("time_budget_total_hours")
-        total_hours = course["delivery"]["total_hours"]
-        if hour_budget is not None:
-            if total_hours is None:
-                warnings.append("مدت کل دوره منتشر نشده است.")
-            elif total_hours > hour_budget:
-                exclusions.append(
-                    f"مدت {total_hours:g} ساعته از بودجه‌ی زمانی {hour_budget:g} ساعت بیشتر است."
-                )
 
-        max_weeks = query.get("max_duration_weeks")
-        duration_weeks = course["delivery"]["duration_weeks"]
-        if max_weeks is not None and duration_weeks is not None and duration_weeks > max_weeks:
-            exclusions.append(
-                f"طول {duration_weeks:g} هفته‌ای از مهلت {max_weeks:g} هفته بیشتر است."
+def _effective_hours(course: dict[str, Any]) -> tuple[float | None, str]:
+    delivery = course["delivery"]
+    if delivery["rag_module_independent"] is True and delivery["rag_relevant_hours"] is not None:
+        return float(delivery["rag_relevant_hours"]), "rag_module"
+    return delivery["total_hours"], "full_course"
+
+
+def _evaluate_budget(course: dict[str, Any], query: dict[str, Any]) -> dict[str, Any]:
+    budget = query["budget"]
+    price = course["commercial"]["price_toman"]
+    result = {"state": "unknown", "score": 4.0, "warnings": [], "adjustments": []}
+
+    if price is None:
+        result["warnings"].append("قیمت عمومی نیست و برای سنجش تناسب بودجه باید استعلام شود.")
+        return result
+
+    preferred = budget["preferred_max_toman"]
+    flexible = budget["flexible_max_toman"]
+    control_max = budget["control_max_toman"]
+
+    if price <= preferred:
+        result.update(state="preferred", score=SCORE_WEIGHTS["budget_fit"])
+        return result
+
+    if price <= flexible:
+        span = max(1, flexible - preferred)
+        ratio = (price - preferred) / span
+        result.update(state="flexible", score=round(10.0 - (4.0 * ratio), 2))
+        result["adjustments"].append(
+            f"بودجه از مقدار مطلوب {_format_toman(preferred)} تا {_format_toman(price)} افزایش یابد."
+        )
+        return result
+
+    if price <= control_max:
+        remaining_span = max(1, control_max - flexible)
+        ratio = (price - flexible) / remaining_span
+        result.update(state="stretch", score=round(max(0.0, 4.0 * (1.0 - ratio)), 2))
+        result["adjustments"].append(
+            f"حد بودجه از {_format_toman(flexible)} به حداقل {_format_toman(price)} افزایش یابد."
+        )
+        return result
+
+    result.update(state="stretch", score=0.0)
+    result["adjustments"].append(
+        f"قیمت {_format_toman(price)} حتی از سقف کنترل {_format_toman(control_max)} بیشتر است."
+    )
+    return result
+
+
+def _evaluate_time(course: dict[str, Any], query: dict[str, Any]) -> dict[str, Any]:
+    time = query["time"]
+    hours, workload_scope = _effective_hours(course)
+    duration_weeks = course["delivery"]["duration_weeks"]
+    result = {
+        "state": "unknown",
+        "score": 5.0,
+        "workload_hours": hours,
+        "workload_scope": workload_scope,
+        "warnings": [],
+        "adjustments": [],
+    }
+
+    if hours is None:
+        result["warnings"].append("مدت قابل استفاده برای این هدف منتشر نشده است.")
+        return result
+
+    preferred_weeks = float(time["preferred_deadline_weeks"])
+    flexible_weeks = float(time["flexible_deadline_weeks"])
+    preferred_hours = float(time["preferred_hours_per_week"])
+    flexible_hours = float(time["flexible_hours_per_week"])
+    preferred_capacity = preferred_weeks * preferred_hours
+    flexible_capacity = flexible_weeks * flexible_hours
+
+    preferred_ok = hours <= preferred_capacity and (
+        duration_weeks is None or duration_weeks <= preferred_weeks
+    )
+    flexible_ok = hours <= flexible_capacity and (
+        duration_weeks is None or duration_weeks <= flexible_weeks
+    )
+
+    if preferred_ok:
+        result.update(state="preferred", score=SCORE_WEIGHTS["time_fit"])
+        return result
+
+    required_hours_at_preferred_deadline = _round_up_half(hours / preferred_weeks)
+    required_weeks_at_preferred_hours = math.ceil(hours / preferred_hours)
+    if duration_weeks is not None:
+        required_weeks_at_preferred_hours = max(required_weeks_at_preferred_hours, math.ceil(duration_weeks))
+
+    if flexible_ok:
+        result.update(state="flexible", score=6.0)
+        if required_hours_at_preferred_deadline <= flexible_hours and (
+            duration_weeks is None or duration_weeks <= preferred_weeks
+        ):
+            result["adjustments"].append(
+                f"زمان هفتگی از {preferred_hours:g} به حدود {required_hours_at_preferred_deadline:g} ساعت افزایش یابد."
+            )
+        else:
+            result["adjustments"].append(
+                f"مهلت از {preferred_weeks:g} به حدود {required_weeks_at_preferred_hours:g} هفته افزایش یابد."
+            )
+        return result
+
+    result.update(state="stretch", score=0.0)
+    result["adjustments"].extend(
+        [
+            f"برای پایان در {preferred_weeks:g} هفته، حدود {required_hours_at_preferred_deadline:g} ساعت در هفته لازم است.",
+            f"با {preferred_hours:g} ساعت در هفته، حدود {required_weeks_at_preferred_hours:g} هفته لازم است.",
+        ]
+    )
+    return result
+
+
+def _evaluate_skills(course: dict[str, Any], query: dict[str, Any]) -> dict[str, Any]:
+    requirements = course["audience"]["skill_requirements"]
+    if not requirements:
+        return {
+            "state": "preferred",
+            "score": SCORE_WEIGHTS["skill_fit"],
+            "missing": [],
+            "adjustments": [],
+        }
+
+    missing: list[dict[str, str]] = []
+    met = 0
+    for requirement in requirements:
+        current_level = query["skills"].get(requirement["skill"], "none")
+        if SKILL_LEVELS[current_level] >= SKILL_LEVELS[requirement["minimum_level"]]:
+            met += 1
+        else:
+            missing.append(
+                {
+                    "skill": requirement["skill"],
+                    "current_level": current_level,
+                    "required_level": requirement["minimum_level"],
+                }
             )
 
-    if "prerequisites" in hard_constraints:
-        user_skills = _expanded_skills(query.get("current_skill_tags", []))
-        missing = [
-            tag
-            for tag in course["audience"]["prerequisite_tags"]
-            if tag not in user_skills
-        ]
-        if missing:
-            exclusions.append("پیش‌نیازهای احرازنشده: " + "، ".join(missing))
-
-    return exclusions, warnings
-
-
-def _score_eligible(course: dict[str, Any], query: dict[str, Any]) -> tuple[dict[str, float], list[str], list[str]]:
-    warnings: list[str] = []
-    gaps: list[str] = []
-
-    required_topics = query.get("required_topics", [])
-    covered_topics = [topic for topic in required_topics if _topic_state(course, topic) is True]
-    unknown_topics = [topic for topic in required_topics if _topic_state(course, topic) is None]
-    missing_topics = [topic for topic in required_topics if _topic_state(course, topic) is False]
-
-    if unknown_topics:
-        warnings.append("پوشش عمومی این موضوع‌ها قابل اثبات نیست: " + "، ".join(unknown_topics))
-    if missing_topics:
-        gaps.append("این موضوع‌ها صریحاً پوشش داده نمی‌شوند: " + "، ".join(missing_topics))
-
-    topic_ratio = len(covered_topics) / len(required_topics) if required_topics else 1.0
-    topic_fit = SCORE_WEIGHTS["topic_fit"] * topic_ratio
-
-    practical_preference = float(query.get("preferences", {}).get("hands_on_project", 0.0))
-    project_state = course["learning_experience"]["hands_on_project"]
-    practical_fit = (
-        SCORE_WEIGHTS["practical_fit"] * practical_preference if project_state is True else 0.0
-    )
-    if project_state is None and practical_preference:
-        warnings.append("وجود پروژه‌ی عملی در منبع عمومی مشخص نیست.")
-    elif project_state is False and practical_preference:
-        gaps.append("پروژه‌ی عملی ندارد.")
-
-    target_level = query.get("target_level", "intermediate")
-    course_level = course["audience"]["level"]
-    level_ratio = LEVEL_FIT.get(target_level, LEVEL_FIT["intermediate"]).get(course_level, 0.5)
-    level_fit = SCORE_WEIGHTS["level_fit"] * level_ratio
-
-    total_hours = course["delivery"]["total_hours"]
-    time_fit = SCORE_WEIGHTS["time_fit"] if total_hours is not None else SCORE_WEIGHTS["time_fit"] * 0.5
-
-    max_price = query.get("budget_max_toman")
-    price = course["commercial"]["price_toman"]
-    if max_price and price is not None:
-        budget_ratio = max(0.0, 1.0 - (price / max_price))
-        budget_fit = SCORE_WEIGHTS["budget_fit"] * budget_ratio
-    elif price == 0:
-        budget_fit = SCORE_WEIGHTS["budget_fit"]
-    else:
-        budget_fit = SCORE_WEIGHTS["budget_fit"] * 0.4
-
-    support_preference = float(query.get("preferences", {}).get("mentor_support", 0.0))
-    mentor_state = course["learning_experience"]["mentor_support"]
-    support_fit = (
-        SCORE_WEIGHTS["support_fit"] * support_preference if mentor_state is True else 0.0
-    )
-    if mentor_state is None and support_preference:
-        warnings.append("دسترسی به منتور یا پشتیبان مشخص نیست.")
-    elif mentor_state is False and support_preference:
-        gaps.append("منتور یا پشتیبانی آموزشی ساختاریافته ندارد.")
-
-    data_confidence = SCORE_WEIGHTS["data_confidence"] * float(
-        course["data_quality"]["completeness"]
-    )
-
-    components = {
-        "topic_fit": round(topic_fit, 2),
-        "practical_fit": round(practical_fit, 2),
-        "level_fit": round(level_fit, 2),
-        "time_fit": round(time_fit, 2),
-        "budget_fit": round(budget_fit, 2),
-        "support_fit": round(support_fit, 2),
-        "data_confidence": round(data_confidence, 2),
+    score = SCORE_WEIGHTS["skill_fit"] * (met / len(requirements))
+    return {
+        "state": "preferred" if not missing else "stretch",
+        "score": round(score, 2),
+        "missing": missing,
+        "adjustments": [
+            f"سطح {item['skill']} از {item['current_level']} به حداقل {item['required_level']} برسد."
+            for item in missing
+        ],
     }
-    return components, warnings, gaps
+
+
+def _evaluate_topics(course: dict[str, Any], query: dict[str, Any]) -> dict[str, Any]:
+    required = query["priorities"]["required_topics"]
+    topic_data = course["rag"]["topics"]
+    total_weight = sum(PRIORITY_FACTORS[value] for value in required.values()) or 1.0
+    covered_weight = 0.0
+    matched: list[str] = []
+    unverified: list[str] = []
+    missing: list[str] = []
+
+    for topic, priority in required.items():
+        state = topic_data.get(topic)
+        if state is True:
+            matched.append(topic)
+            covered_weight += PRIORITY_FACTORS[priority]
+        elif state is False:
+            missing.append(topic)
+        else:
+            unverified.append(topic)
+
+    return {
+        "score": round(SCORE_WEIGHTS["topic_fit"] * covered_weight / total_weight, 2),
+        "matched": matched,
+        "unverified": unverified,
+        "missing": missing,
+    }
+
+
+def _evaluate_practical(course: dict[str, Any], query: dict[str, Any]) -> dict[str, Any]:
+    project_priority = PRIORITY_FACTORS[query["priorities"]["hands_on_project"]]
+    evaluation_priority = PRIORITY_FACTORS[
+        query["priorities"]["required_topics"].get("evaluation", "none")
+    ]
+    project_state = course["learning_experience"]["hands_on_project"]
+    evaluation_state = course["rag"]["topics"]["evaluation"]
+    score = 0.0
+    warnings: list[str] = []
+
+    if project_state is True:
+        score += 12.0 * project_priority
+    elif project_state is None and project_priority:
+        warnings.append("وجود پروژه‌ی عملی در اطلاعات عمومی مشخص نیست.")
+
+    if evaluation_state is True:
+        score += 8.0 * evaluation_priority
+    elif evaluation_state is None and evaluation_priority:
+        warnings.append("پوشش عملی evaluation در اطلاعات عمومی قابل اثبات نیست.")
+
+    return {"score": round(score, 2), "warnings": warnings}
+
+
+def _evaluate_support(course: dict[str, Any], query: dict[str, Any]) -> dict[str, Any]:
+    factor = PRIORITY_FACTORS[query["priorities"]["mentor_support"]]
+    state = course["learning_experience"]["mentor_support"]
+    warnings: list[str] = []
+    score = SCORE_WEIGHTS["support_fit"] * factor if state is True else 0.0
+    if state is None and factor:
+        warnings.append("دسترسی به منتور یا پشتیبان مشخص نیست.")
+    return {"score": round(score, 2), "warnings": warnings}
+
+
+def _result_group(states: dict[str, str]) -> str:
+    if states["persian_access"] == "stretch" or "stretch" in {
+        states["budget"],
+        states["time"],
+        states["skills"],
+    }:
+        return "stretch_options"
+    if "unknown" in {states["budget"], states["time"]}:
+        return "flexible_matches"
+    if "flexible" in {states["budget"], states["time"]}:
+        return "flexible_matches"
+    return "current_matches"
+
+
+def _rank_one(course: dict[str, Any], query: dict[str, Any]) -> dict[str, Any]:
+    budget = _evaluate_budget(course, query)
+    time = _evaluate_time(course, query)
+    skills = _evaluate_skills(course, query)
+    topics = _evaluate_topics(course, query)
+    practical = _evaluate_practical(course, query)
+    support = _evaluate_support(course, query)
+    persian_state = (
+        "preferred"
+        if not query["persian_access_required"]
+        or course["localization"]["persian_access"] in {"native", "subtitled"}
+        else "stretch"
+    )
+
+    confidence_score = round(
+        SCORE_WEIGHTS["data_confidence"] * float(course["data_quality"]["completeness"]),
+        2,
+    )
+    components = {
+        "topic_fit": topics["score"],
+        "practical_and_evaluation": practical["score"],
+        "skill_fit": skills["score"],
+        "time_fit": time["score"],
+        "budget_fit": budget["score"],
+        "support_fit": support["score"],
+        "data_confidence": confidence_score,
+    }
+    score = round(min(MAX_SCORE, sum(components.values())), 2)
+    states = {
+        "budget": budget["state"],
+        "time": time["state"],
+        "skills": skills["state"],
+        "persian_access": persian_state,
+    }
+    group = _result_group(states)
+    warnings = budget["warnings"] + time["warnings"] + practical["warnings"] + support["warnings"]
+    if topics["unverified"]:
+        warnings.append(
+            "پوشش این موضوع‌های ضروری در اطلاعات عمومی قابل اثبات نیست: "
+            + "، ".join(topics["unverified"])
+        )
+    gaps = []
+    if topics["missing"]:
+        gaps.append("موضوع‌های ضروری فاقد پوشش: " + "، ".join(topics["missing"]))
+    if persian_state == "stretch":
+        gaps.append("دسترسی فارسی ندارد.")
+
+    adjustments = budget["adjustments"] + time["adjustments"] + skills["adjustments"]
+    exact_match = (
+        group == "current_matches"
+        and not topics["unverified"]
+        and not topics["missing"]
+        and not warnings
+        and not gaps
+    )
+
+    return {
+        "course_id": course["id"],
+        "title_fa": course["title_fa"],
+        "provider": course["provider"],
+        "source_url": course["source"]["url"],
+        "group": group,
+        "score": score,
+        "score_components": components,
+        "constraint_states": states,
+        "workload": {
+            "hours": time["workload_hours"],
+            "scope": time["workload_scope"],
+        },
+        "matched_required_topics": topics["matched"],
+        "unverified_required_topics": topics["unverified"],
+        "missing_required_topics": topics["missing"],
+        "missing_skills": skills["missing"],
+        "adjustments": adjustments,
+        "warnings": warnings,
+        "gaps": gaps,
+        "exact_match": exact_match,
+    }
 
 
 def rank_courses(dataset: dict[str, Any], query: dict[str, Any]) -> dict[str, Any]:
-    """Rank courses while keeping exclusions and uncertainty explicit."""
-    eligible: list[dict[str, Any]] = []
-    excluded: list[dict[str, Any]] = []
+    """Rank every course and retain options that need user flexibility."""
+    validate_query(query)
+    groups: dict[str, list[dict[str, Any]]] = {name: [] for name in GROUP_ORDER}
 
     for course in dataset["courses"]:
-        exclusions, hard_warnings = _hard_filter(course, query)
-        base = {
-            "course_id": course["id"],
-            "title_fa": course["title_fa"],
-            "provider": course["provider"],
-            "source_url": course["source"]["url"],
-        }
+        result = _rank_one(course, query)
+        groups[result["group"]].append(result)
 
-        if exclusions:
-            excluded.append({**base, "exclusion_reasons": exclusions, "warnings": hard_warnings})
-            continue
-
-        components, score_warnings, gaps = _score_eligible(course, query)
-        score = round(min(MAX_SCORE, sum(components.values())), 2)
-        eligible.append(
-            {
-                **base,
-                "score": score,
-                "score_components": components,
-                "matched_required_topics": [
-                    topic
-                    for topic in query.get("required_topics", [])
-                    if _topic_state(course, topic) is True
-                ],
-                "warnings": hard_warnings + score_warnings,
-                "gaps": gaps,
-            }
-        )
-
-    eligible.sort(key=lambda item: (-item["score"], item["course_id"]))
-    excluded.sort(key=lambda item: item["course_id"])
+    for rows in groups.values():
+        rows.sort(key=lambda item: (-item["score"], item["course_id"]))
 
     return {
         "product_name": dataset["dataset"]["product_name"],
         "query_id": query["id"],
-        "scoring_version": "1.0.0",
+        "scoring_version": SCORING_VERSION,
         "score_weights": SCORE_WEIGHTS,
+        "budget_control": {
+            "min_toman": BUDGET_CONTROL_MIN_TOMAN,
+            "max_toman": BUDGET_CONTROL_MAX_TOMAN,
+            "preferred_max_toman": query["budget"]["preferred_max_toman"],
+            "flexible_max_toman": query["budget"]["flexible_max_toman"],
+        },
         "summary": {
             "input_courses": len(dataset["courses"]),
-            "eligible_courses": len(eligible),
-            "excluded_courses": len(excluded),
-            "exact_match": any(not item["warnings"] and not item["gaps"] for item in eligible),
+            "visible_courses": sum(len(rows) for rows in groups.values()),
+            "current_matches": len(groups["current_matches"]),
+            "flexible_matches": len(groups["flexible_matches"]),
+            "stretch_options": len(groups["stretch_options"]),
+            "insufficient_data": len(groups["insufficient_data"]),
+            "exact_matches": sum(
+                1 for rows in groups.values() for item in rows if item["exact_match"]
+            ),
         },
-        "ranked_courses": eligible,
-        "excluded_courses": excluded,
+        "groups": groups,
     }
+
+
+def with_query_changes(query: dict[str, Any], changes: dict[str, Any]) -> dict[str, Any]:
+    """Return a query copy with shallow changes for budget, time, or skills."""
+    updated = deepcopy(query)
+    for section, values in changes.items():
+        if not isinstance(values, dict) or section not in updated:
+            raise ValueError(f"بخش تغییر نامعتبر است: {section}")
+        updated[section].update(values)
+    return updated
 
 
 def main() -> None:

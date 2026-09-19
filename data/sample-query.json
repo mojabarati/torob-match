@@ -1,17 +1,34 @@
 {
-  "id": "rag-working-developer-v1",
-  "goal_fa": "یادگیری ساخت یک قابلیت RAG قابل ارزیابی برای استفاده در پروژه واقعی",
-  "target_level": "intermediate",
-  "current_skill_tags": ["python_intermediate", "software_engineering"],
+  "id": "sara-rag-v2",
+  "persona": "سارا، توسعه‌دهنده‌ی بک‌اند",
+  "goal_fa": "یادگیری ساخت یک قابلیت RAG قابل ارزیابی برای استفاده در محصول شرکت",
   "persian_access_required": true,
-  "budget_max_toman": 5000000,
-  "time_budget_total_hours": 72,
-  "max_duration_weeks": 12,
-  "hard_constraints": ["persian_access", "budget", "time", "prerequisites"],
-  "required_topics": ["rag_foundations", "evaluation"],
-  "preferences": {
-    "hands_on_project": 1.0,
-    "mentor_support": 0.6
+  "budget": {
+    "control_min_toman": 0,
+    "control_max_toman": 30000000,
+    "control_step_toman": 500000,
+    "preferred_max_toman": 5000000,
+    "flexible_max_toman": 10000000
   },
-  "low_priority": ["certificate"]
+  "time": {
+    "preferred_deadline_weeks": 12,
+    "flexible_deadline_weeks": 20,
+    "preferred_hours_per_week": 6,
+    "flexible_hours_per_week": 10
+  },
+  "skills": {
+    "python": "intermediate",
+    "software_engineering": "intermediate",
+    "rag": "none",
+    "langchain": "none"
+  },
+  "priorities": {
+    "required_topics": {
+      "rag_foundations": "must",
+      "evaluation": "must"
+    },
+    "hands_on_project": "high",
+    "mentor_support": "medium",
+    "certificate": "low"
+  }
 }

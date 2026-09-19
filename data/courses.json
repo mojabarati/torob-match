@@ -1,8 +1,8 @@
 {
   "dataset": {
     "product_name": "دوره‌یاب",
-    "scenario": "انتخاب دوره برای ساخت و ارزیابی یک قابلیت RAG در پروژه واقعی",
-    "schema_version": "1.0.0",
+    "scenario": "کاوش پویا در دوره‌های ساخت و ارزیابی RAG با بودجه، زمان و مهارت قابل تنظیم",
+    "schema_version": "2.0.0",
     "observed_at": "2026-09-18",
     "record_count": 8,
     "missing_value_policy": "اطلاعاتی که در منبع عمومی دیده نشده‌اند null هستند و به‌معنای نبود آن ویژگی نیستند."
@@ -27,6 +27,8 @@
         "total_hours": 10.5,
         "duration_weeks": null,
         "hours_per_week": null,
+        "rag_relevant_hours": 10.5,
+        "rag_module_independent": true,
         "access_model": "one_time_purchase",
         "start_date_jalali": null
       },
@@ -38,7 +40,11 @@
       },
       "audience": {
         "level": "advanced",
-        "prerequisite_tags": ["python_intermediate", "software_engineering", "rag_basic"],
+        "skill_requirements": [
+          { "skill": "python", "minimum_level": "intermediate" },
+          { "skill": "software_engineering", "minimum_level": "intermediate" },
+          { "skill": "rag", "minimum_level": "beginner" }
+        ],
         "prerequisites_fa": [
           "پایتون در سطح متوسط",
           "تجربه‌ی مهندسی نرم‌افزار",
@@ -102,6 +108,8 @@
         "total_hours": 2,
         "duration_weeks": null,
         "hours_per_week": null,
+        "rag_relevant_hours": null,
+        "rag_module_independent": null,
         "access_model": "one_time_purchase",
         "start_date_jalali": null
       },
@@ -113,7 +121,7 @@
       },
       "audience": {
         "level": "beginner",
-        "prerequisite_tags": [],
+        "skill_requirements": [],
         "prerequisites_fa": []
       },
       "rag": {
@@ -173,6 +181,8 @@
         "total_hours": 1,
         "duration_weeks": null,
         "hours_per_week": null,
+        "rag_relevant_hours": 1,
+        "rag_module_independent": true,
         "access_model": "one_time_purchase",
         "start_date_jalali": null
       },
@@ -184,7 +194,7 @@
       },
       "audience": {
         "level": "beginner",
-        "prerequisite_tags": [],
+        "skill_requirements": [],
         "prerequisites_fa": ["آشنایی بسیار مقدماتی با پایتون مفید است اما الزامی اعلام نشده است."]
       },
       "rag": {
@@ -244,6 +254,8 @@
         "total_hours": 50,
         "duration_weeks": 10,
         "hours_per_week": 5,
+        "rag_relevant_hours": null,
+        "rag_module_independent": null,
         "access_model": "scheduled_enrollment",
         "start_date_jalali": "1405/07/17"
       },
@@ -255,7 +267,9 @@
       },
       "audience": {
         "level": "intermediate",
-        "prerequisite_tags": ["python_basic"],
+        "skill_requirements": [
+          { "skill": "python", "minimum_level": "beginner" }
+        ],
         "prerequisites_fa": ["آشنایی با زبان برنامه‌نویسی پایتون"]
       },
       "rag": {
@@ -315,6 +329,8 @@
         "total_hours": 150,
         "duration_weeks": 20,
         "hours_per_week": null,
+        "rag_relevant_hours": null,
+        "rag_module_independent": null,
         "access_model": "scheduled_enrollment",
         "start_date_jalali": null
       },
@@ -326,7 +342,9 @@
       },
       "audience": {
         "level": "intermediate",
-        "prerequisite_tags": ["python_basic"],
+        "skill_requirements": [
+          { "skill": "python", "minimum_level": "beginner" }
+        ],
         "prerequisites_fa": ["آشنایی اولیه با پایتون"]
       },
       "rag": {
@@ -386,6 +404,8 @@
         "total_hours": 570,
         "duration_weeks": 52,
         "hours_per_week": 10,
+        "rag_relevant_hours": null,
+        "rag_module_independent": null,
         "access_model": "public_curriculum",
         "start_date_jalali": null
       },
@@ -397,7 +417,7 @@
       },
       "audience": {
         "level": "mixed",
-        "prerequisite_tags": [],
+        "skill_requirements": [],
         "prerequisites_fa": []
       },
       "rag": {
@@ -457,6 +477,8 @@
         "total_hours": 12,
         "duration_weeks": null,
         "hours_per_week": null,
+        "rag_relevant_hours": null,
+        "rag_module_independent": null,
         "access_model": "free_public",
         "start_date_jalali": null
       },
@@ -468,7 +490,7 @@
       },
       "audience": {
         "level": "intermediate",
-        "prerequisite_tags": [],
+        "skill_requirements": [],
         "prerequisites_fa": []
       },
       "rag": {
@@ -528,6 +550,8 @@
         "total_hours": 6,
         "duration_weeks": null,
         "hours_per_week": null,
+        "rag_relevant_hours": null,
+        "rag_module_independent": null,
         "access_model": "one_time_purchase",
         "start_date_jalali": null
       },
@@ -539,7 +563,11 @@
       },
       "audience": {
         "level": "advanced",
-        "prerequisite_tags": ["python_intermediate", "software_engineering", "langchain_basic"],
+        "skill_requirements": [
+          { "skill": "python", "minimum_level": "intermediate" },
+          { "skill": "software_engineering", "minimum_level": "intermediate" },
+          { "skill": "langchain", "minimum_level": "beginner" }
+        ],
         "prerequisites_fa": ["پایتون", "LangChain", "مبانی محکم مهندسی نرم‌افزار"]
       },
       "rag": {
