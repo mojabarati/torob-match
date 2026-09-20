@@ -27,6 +27,8 @@ doreh-yab/
 
 راهبرد کامل آزمون‌های منطق، React، یکپارچگی، انتها‌به‌انتها و دسترس‌پذیری در [راهبرد آزمون فنی](docs/07-testing-strategy.md) ثبت شده است.
 
+قرارداد رنگ، فاصله، تایپوگرافی و دسترس‌پذیری High-fidelity در [Foundations طراحی](docs/08-design-foundations.md) و [`data/design-tokens.json`](data/design-tokens.json) نگهداری می‌شود.
+
 ## اصول پروژه
 
 - مسئله‌ی کاربر مقدم بر قابلیت‌های نمایشی است.

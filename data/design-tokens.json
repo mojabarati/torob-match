@@ -1,0 +1,90 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "meta": {
+    "product": "دوره‌یاب",
+    "theme": "light",
+    "fontFamily": "Vazirmatn",
+    "description": "منبع مشترک High-fidelity در Figma و پیاده‌سازی React"
+  },
+  "primitive": {
+    "color": {
+      "white": { "$type": "color", "$value": "#FFFFFF" },
+      "slate-50": { "$type": "color", "$value": "#F8FAFC" },
+      "slate-100": { "$type": "color", "$value": "#F1F5F9" },
+      "slate-200": { "$type": "color", "$value": "#E2E8F0" },
+      "slate-300": { "$type": "color", "$value": "#CBD5E1" },
+      "slate-500": { "$type": "color", "$value": "#64748B" },
+      "slate-600": { "$type": "color", "$value": "#475569" },
+      "slate-700": { "$type": "color", "$value": "#334155" },
+      "slate-900": { "$type": "color", "$value": "#0F172A" },
+      "red-50": { "$type": "color", "$value": "#FFF1F2" },
+      "red-100": { "$type": "color", "$value": "#FFE4E6" },
+      "red-500": { "$type": "color", "$value": "#E11D48" },
+      "red-600": { "$type": "color", "$value": "#BE123C" },
+      "green-50": { "$type": "color", "$value": "#ECFDF5" },
+      "green-600": { "$type": "color", "$value": "#059669" },
+      "amber-50": { "$type": "color", "$value": "#FFFBEB" },
+      "amber-700": { "$type": "color", "$value": "#B45309" },
+      "violet-50": { "$type": "color", "$value": "#F5F3FF" },
+      "violet-700": { "$type": "color", "$value": "#6D28D9" },
+      "sky-600": { "$type": "color", "$value": "#0284C7" }
+    }
+  },
+  "semantic": {
+    "color": {
+      "background-page": { "$type": "color", "$value": "{primitive.color.slate-50}" },
+      "background-surface": { "$type": "color", "$value": "{primitive.color.white}" },
+      "background-subtle": { "$type": "color", "$value": "{primitive.color.slate-100}" },
+      "background-brand": { "$type": "color", "$value": "{primitive.color.red-500}" },
+      "background-brand-hover": { "$type": "color", "$value": "{primitive.color.red-600}" },
+      "background-brand-subtle": { "$type": "color", "$value": "{primitive.color.red-50}" },
+      "background-success-subtle": { "$type": "color", "$value": "{primitive.color.green-50}" },
+      "background-warning-subtle": { "$type": "color", "$value": "{primitive.color.amber-50}" },
+      "background-stretch-subtle": { "$type": "color", "$value": "{primitive.color.violet-50}" },
+      "text-primary": { "$type": "color", "$value": "{primitive.color.slate-900}" },
+      "text-secondary": { "$type": "color", "$value": "{primitive.color.slate-600}" },
+      "text-tertiary": { "$type": "color", "$value": "{primitive.color.slate-500}" },
+      "text-on-brand": { "$type": "color", "$value": "{primitive.color.white}" },
+      "text-brand": { "$type": "color", "$value": "{primitive.color.red-600}" },
+      "text-success": { "$type": "color", "$value": "{primitive.color.green-600}" },
+      "text-warning": { "$type": "color", "$value": "{primitive.color.amber-700}" },
+      "text-stretch": { "$type": "color", "$value": "{primitive.color.violet-700}" },
+      "border-default": { "$type": "color", "$value": "{primitive.color.slate-200}" },
+      "border-strong": { "$type": "color", "$value": "{primitive.color.slate-300}" },
+      "border-brand": { "$type": "color", "$value": "{primitive.color.red-500}" },
+      "border-focus": { "$type": "color", "$value": "{primitive.color.sky-600}" }
+    }
+  },
+  "dimension": {
+    "space": {
+      "1": { "$type": "dimension", "$value": "4px" },
+      "2": { "$type": "dimension", "$value": "8px" },
+      "3": { "$type": "dimension", "$value": "12px" },
+      "4": { "$type": "dimension", "$value": "16px" },
+      "5": { "$type": "dimension", "$value": "20px" },
+      "6": { "$type": "dimension", "$value": "24px" },
+      "8": { "$type": "dimension", "$value": "32px" },
+      "10": { "$type": "dimension", "$value": "40px" },
+      "12": { "$type": "dimension", "$value": "48px" }
+    },
+    "radius": {
+      "sm": { "$type": "dimension", "$value": "8px" },
+      "md": { "$type": "dimension", "$value": "12px" },
+      "lg": { "$type": "dimension", "$value": "16px" },
+      "full": { "$type": "dimension", "$value": "999px" }
+    },
+    "control-height": {
+      "sm": { "$type": "dimension", "$value": "40px" },
+      "md": { "$type": "dimension", "$value": "44px" },
+      "lg": { "$type": "dimension", "$value": "48px" }
+    }
+  },
+  "typography": {
+    "body-sm": { "$type": "typography", "$value": { "fontFamily": "Vazirmatn", "fontSize": "12px", "fontWeight": 400, "lineHeight": 1.7 } },
+    "body-md": { "$type": "typography", "$value": { "fontFamily": "Vazirmatn", "fontSize": "14px", "fontWeight": 400, "lineHeight": 1.8 } },
+    "label": { "$type": "typography", "$value": { "fontFamily": "Vazirmatn", "fontSize": "13px", "fontWeight": 600, "lineHeight": 1.6 } },
+    "title-card": { "$type": "typography", "$value": { "fontFamily": "Vazirmatn", "fontSize": "18px", "fontWeight": 700, "lineHeight": 1.6 } },
+    "title-section": { "$type": "typography", "$value": { "fontFamily": "Vazirmatn", "fontSize": "22px", "fontWeight": 700, "lineHeight": 1.5 } },
+    "title-page": { "$type": "typography", "$value": { "fontFamily": "Vazirmatn", "fontSize": "30px", "fontWeight": 700, "lineHeight": 1.45 } }
+  }
+}
