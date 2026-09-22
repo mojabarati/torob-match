@@ -1,4 +1,8 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+coverage/
+*.tsbuildinfo
 __pycache__/
-*.py[cod]
-.pytest_cache/
-
+*.pyc

@@ -1,0 +1,186 @@
+import { useEffect, useMemo, useState } from 'react'
+import {
+  ArrowLeft, ArrowUpLeft, Bookmark, Check, CheckCircle2, ChevronDown, CircleAlert,
+  Clock3, Filter, Heart, Info, Menu, Search, SlidersHorizontal,
+  Sparkles, X,
+} from 'lucide-react'
+import dataset from '../data/courses.json'
+import sampleQuery from '../data/sample-query.json'
+import { GROUP_ORDER, rankCourses, type Course, type Group, type Level, type RankedCourse, type SearchQuery } from './lib/ranking'
+
+const courses = dataset.courses as Course[]
+const initialQuery = sampleQuery as SearchQuery
+const courseById = new Map(courses.map(course => [course.id, course]))
+const groupName: Record<Group, string> = {
+  current_matches: 'مناسب شرایط فعلی',
+  flexible_matches: 'با کمی انعطاف',
+  stretch_options: 'نیازمند تغییر بیشتر',
+  insufficient_data: 'دادهٔ ناکافی',
+}
+const levelName: Record<Level, string> = { none: 'بدون تجربه', beginner: 'مقدماتی', intermediate: 'متوسط', advanced: 'پیشرفته' }
+const groupTone: Record<Group, string> = { current_matches: 'success', flexible_matches: 'warning', stretch_options: 'stretch', insufficient_data: 'neutral' }
+const asPersianNumber = (value: number) => new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 1 }).format(value)
+const formatPrice = (price: number | null) => price === null ? 'نیازمند استعلام' : price === 0 ? 'رایگان' : `${asPersianNumber(price)} تومان`
+const million = (value: number) => `${asPersianNumber(value / 1_000_000)} میلیون`
+const normalize = (value: string) => value.toLocaleLowerCase('fa').replace(/[ي]/g, 'ی').replace(/[ك]/g, 'ک').trim()
+
+function usePersistentIds(key: string) {
+  const [ids, setIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(key) || '[]') as string[] } catch { return [] }
+  })
+  useEffect(() => { localStorage.setItem(key, JSON.stringify(ids)) }, [ids, key])
+  return [ids, setIds] as const
+}
+
+function Logo() {
+  return <div className="brand" aria-label="دوره‌یاب">
+    <div className="brand-mark" aria-hidden="true"><span /></div>
+    <div className="brand-text"><strong>دوره‌یاب</strong><small>انتخاب مطمئن برای یادگیری</small></div>
+  </div>
+}
+
+type FilterPanelProps = {
+  query: SearchQuery
+  onChange: (query: SearchQuery) => void
+  onReset: () => void
+  onClose?: () => void
+  count: number
+}
+
+function FilterPanel({ query, onChange, onReset, onClose, count }: FilterPanelProps) {
+  const updateBudget = (key: 'preferred_max_toman' | 'flexible_max_toman', value: number) => {
+    const budget = { ...query.budget, [key]: value }
+    if (budget.preferred_max_toman > budget.flexible_max_toman) {
+      if (key === 'preferred_max_toman') budget.flexible_max_toman = value
+      else budget.preferred_max_toman = value
+    }
+    onChange({ ...query, budget })
+  }
+  const updateTime = (key: keyof SearchQuery['time'], value: number) => {
+    const time = { ...query.time, [key]: value }
+    if (time.preferred_hours_per_week > time.flexible_hours_per_week) {
+      if (key === 'preferred_hours_per_week') time.flexible_hours_per_week = value
+      else time.preferred_hours_per_week = value
+    }
+    if (time.preferred_deadline_weeks > time.flexible_deadline_weeks) {
+      if (key === 'preferred_deadline_weeks') time.flexible_deadline_weeks = value
+      else time.preferred_deadline_weeks = value
+    }
+    onChange({ ...query, time })
+  }
+  const updateSkill = (skill: string, value: Level) => onChange({ ...query, skills: { ...query.skills, [skill]: value } })
+  const updatePriority = (key: 'hands_on_project' | 'mentor_support', checked: boolean) => onChange({
+    ...query, priorities: { ...query.priorities, [key]: checked ? 'high' : 'none' },
+  })
+  const updateEvaluation = (checked: boolean) => onChange({
+    ...query, priorities: { ...query.priorities, required_topics: { ...query.priorities.required_topics, evaluation: checked ? 'must' : 'none' } },
+  })
+
+  return <aside className="filter-panel" aria-label="فیلتر و انعطاف">
+    <div className="filter-heading"><div><SlidersHorizontal size={19} /><strong>فیلتر و انعطاف</strong></div><div className="filter-actions"><button className="text-button" onClick={onReset}>بازنشانی</button>{onClose && <button className="icon-button close-mobile" aria-label="بستن فیلترها" onClick={onClose}><X size={19} /></button>}</div></div>
+    <div className="filter-section">
+      <div className="section-heading"><span>بودجهٔ یادگیری</span><span className="section-hint">۰ تا ۳۰ میلیون تومان</span></div>
+      <div className="range-caption"><span>بودجهٔ مطلوب</span><strong>{million(query.budget.preferred_max_toman)}</strong></div>
+      <input aria-label="بودجهٔ مطلوب" type="range" min="0" max="30000000" step="500000" value={query.budget.preferred_max_toman} onChange={event => updateBudget('preferred_max_toman', Number(event.target.value))} />
+      <div className="range-caption second"><span>مرز انعطاف</span><strong>{million(query.budget.flexible_max_toman)}</strong></div>
+      <input aria-label="مرز انعطاف بودجه" type="range" min="0" max="30000000" step="500000" value={query.budget.flexible_max_toman} onChange={event => updateBudget('flexible_max_toman', Number(event.target.value))} />
+      <div className="range-ends"><span>۰</span><span>۳۰ میلیون</span></div>
+    </div>
+    <div className="filter-section"><div className="section-heading">زمانی که در اختیار داری</div>
+      <div className="field-grid"><label className="select-field">ساعت در هفته<select aria-label="ساعت مطلوب در هفته" value={query.time.preferred_hours_per_week} onChange={event => updateTime('preferred_hours_per_week', Number(event.target.value))}>{[2, 4, 6, 8, 10, 12, 16, 20, 30, 40, 50].map(v => <option key={v} value={v}>{asPersianNumber(v)} ساعت</option>)}</select></label><label className="select-field">تا سقف منعطف<select aria-label="ساعت منعطف در هفته" value={query.time.flexible_hours_per_week} onChange={event => updateTime('flexible_hours_per_week', Number(event.target.value))}>{[2, 4, 6, 8, 10, 12, 16, 20, 30, 40, 50].map(v => <option key={v} value={v}>{asPersianNumber(v)} ساعت</option>)}</select></label></div>
+      <div className="field-grid"><label className="select-field">مهلت مطلوب<select aria-label="مهلت مطلوب" value={query.time.preferred_deadline_weeks} onChange={event => updateTime('preferred_deadline_weeks', Number(event.target.value))}>{[4, 8, 12, 16, 20, 25, 32, 52, 100].map(v => <option key={v} value={v}>{asPersianNumber(v)} هفته</option>)}</select></label><label className="select-field">مهلت منعطف<select aria-label="مهلت منعطف" value={query.time.flexible_deadline_weeks} onChange={event => updateTime('flexible_deadline_weeks', Number(event.target.value))}>{[4, 8, 12, 16, 20, 25, 32, 52, 100].map(v => <option key={v} value={v}>{asPersianNumber(v)} هفته</option>)}</select></label></div>
+    </div>
+    <div className="filter-section"><div className="section-heading">سطح مهارت فعلی</div>
+      <label className="select-field full">Python<select aria-label="سطح Python" value={query.skills.python} onChange={event => updateSkill('python', event.target.value as Level)}>{Object.entries(levelName).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label>
+      <label className="select-field full">RAG<select aria-label="سطح RAG" value={query.skills.rag} onChange={event => updateSkill('rag', event.target.value as Level)}>{Object.entries(levelName).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label>
+      <label className="select-field full">LangChain<select aria-label="سطح LangChain" value={query.skills.langchain} onChange={event => updateSkill('langchain', event.target.value as Level)}>{Object.entries(levelName).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label>
+    </div>
+    <div className="filter-section priority-section"><div className="section-heading">برایم مهم است</div>
+      <label className="check-row"><span>پروژهٔ عملی</span><input type="checkbox" checked={query.priorities.hands_on_project !== 'none'} onChange={event => updatePriority('hands_on_project', event.target.checked)} /></label>
+      <label className="check-row"><span>پوشش Evaluation</span><input type="checkbox" checked={query.priorities.required_topics.evaluation !== 'none'} onChange={event => updateEvaluation(event.target.checked)} /></label>
+      <label className="check-row"><span>پشتیبانی مدرس</span><input type="checkbox" checked={query.priorities.mentor_support !== 'none'} onChange={event => updatePriority('mentor_support', event.target.checked)} /></label>
+    </div>
+    <div className="filter-foot"><button className="primary-button full" onClick={onClose}>نمایش {asPersianNumber(count)} دوره <ArrowLeft size={17} /></button><p>با تغییر معیارها، هیچ دوره‌ای از مجموعهٔ اصلی حذف نمی‌شود؛ فقط جایگاه و دلیل آن به‌روز می‌شود.</p></div>
+  </aside>
+}
+
+function CourseCard({ row, course, index, selected, saved, onCompare, onSave, featured }: {
+  row: RankedCourse; course: Course; index: number; selected: boolean; saved: boolean; onCompare: () => void; onSave: () => void; featured: boolean
+}) {
+  const positive = [
+    row.matched_required_topics.includes('rag_foundations') && 'مبانی RAG در سرفصل دوره تأیید شده است.',
+    course.learning_experience.hands_on_project === true && 'پروژهٔ عملی در اطلاعات دوره ذکر شده است.',
+    row.constraint_states.time === 'preferred' && 'با زمان هفتگی و مهلت مطلوب شما سازگار است.',
+    row.constraint_states.budget === 'preferred' && 'در بودجهٔ مطلوب شما قرار می‌گیرد.',
+  ].filter(Boolean).slice(0, featured ? 3 : 2) as string[]
+  const mainWarning = row.warnings.find(text => text.includes('evaluation')) || row.warnings[0]
+  const price = course.commercial.price_toman
+  return <article className={`course-card ${featured ? 'featured' : ''} tone-${groupTone[row.group]}`} data-testid={`course-${course.id}`}>
+    <div className="card-topline"><span className={`status-chip tone-${groupTone[row.group]}`}><span className="status-dot" />{groupName[row.group]}</span><div className="card-top-actions"><span className="result-position">گزینهٔ {asPersianNumber(index)}</span><button className={`icon-button save-button ${saved ? 'is-saved' : ''}`} aria-label={saved ? `حذف ${course.title_fa} از ذخیره‌شده‌ها` : `ذخیره ${course.title_fa}`} aria-pressed={saved} onClick={onSave}><Heart size={19} fill={saved ? 'currentColor' : 'none'} /></button></div></div>
+    <div className="card-head"><div className="card-head-main"><h3>{course.title_fa}</h3><p>{course.provider} <span>·</span> {course.localization.persian_access === 'native' ? 'آموزش فارسی' : 'با زیرنویس فارسی'} <span>·</span> {course.delivery.mode === 'instructor_led' ? 'مدرس‌محور' : 'یادگیری منعطف'}</p></div><div className="score-badge"><strong>{asPersianNumber(row.score)}</strong><span>از ۱۰۰</span></div></div>
+    <div className="card-facts"><div><span>شهریهٔ مشاهده‌شده</span><strong>{formatPrice(price)}</strong></div><div><span>مدت محتوای مرتبط</span><strong>{row.workload.hours === null ? 'نامشخص' : `${asPersianNumber(row.workload.hours)} ساعت`}</strong></div><div><span>پروژهٔ عملی</span><strong>{course.learning_experience.hands_on_project === true ? 'تأییدشده' : 'نامشخص'}</strong></div><div><span>Evaluation</span><strong>{course.rag.topics.evaluation === true ? 'تأییدشده' : course.rag.topics.evaluation === false ? 'ذکر نشده' : 'اثبات‌نشده'}</strong></div></div>
+    {featured && <div className="reason-box"><div className="mini-heading"><Sparkles size={16} /> چرا پیشنهاد شده؟</div><ul>{positive.map(text => <li key={text}>{text}</li>)}</ul></div>}
+    {!featured && <p className="short-reason"><CheckCircle2 size={16} />{positive[0] || 'جزئیات این دوره برای مقایسه در دسترس است.'}</p>}
+    {row.adjustments.length > 0 && <div className="adjustment"><Info size={17} /><span><strong>برای تناسب بیشتر:</strong> {row.adjustments[0]}</span></div>}
+    {mainWarning && <div className="warning-line"><CircleAlert size={17} /><span>{mainWarning}</span></div>}
+    <div className="card-bottom"><div className="card-meta"><span><Clock3 size={14} /> دادهٔ بررسی‌شده: {course.source.observed_at}</span><span>اعتبار داده: {course.data_quality.confidence === 'high' ? 'بالا' : 'متوسط'}</span></div><div className="card-buttons"><button className={`outline-button compare-button ${selected ? 'selected' : ''}`} aria-pressed={selected} onClick={onCompare}>{selected ? <Check size={16} /> : <span className="plus-box">+</span>}{selected ? 'در مقایسه' : 'افزودن به مقایسه'}</button><a className="source-button" href={course.source.url} target="_blank" rel="noopener noreferrer" aria-label={`مشاهدهٔ منبع ${course.title_fa} در سایت برگزارکننده`}>مشاهدهٔ دوره <ArrowUpLeft size={16} /></a></div></div>
+  </article>
+}
+
+function CompareDialog({ ids, rows, onClose, onRemove }: { ids: string[]; rows: RankedCourse[]; onClose: () => void; onRemove: (id: string) => void }) {
+  const chosen = ids.map(id => ({ course: courseById.get(id)!, row: rows.find(row => row.course_id === id)! })).filter(item => item.course && item.row)
+  return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div className="compare-modal" role="dialog" aria-modal="true" aria-labelledby="compare-title"><div className="modal-heading"><div><span className="eyebrow">تصمیم با اطلاعات روشن‌تر</span><h2 id="compare-title">مقایسهٔ کنارهمی دوره‌ها</h2></div><button className="icon-button" aria-label="بستن مقایسه" onClick={onClose}><X size={21} /></button></div><div className="compare-scroll"><table><thead><tr><th scope="col">معیار</th>{chosen.map(({ course }) => <th scope="col" key={course.id}><span>{course.title_fa}</span><button className="table-remove" aria-label={`حذف ${course.title_fa} از مقایسه`} onClick={() => onRemove(course.id)}><X size={15} /></button></th>)}</tr></thead><tbody><tr><th scope="row">امتیاز تناسب</th>{chosen.map(({ course, row }) => <td key={course.id}><strong className="table-score">{asPersianNumber(row.score)} / ۱۰۰</strong></td>)}</tr><tr><th scope="row">وضعیت</th>{chosen.map(({ course, row }) => <td key={course.id}>{groupName[row.group]}</td>)}</tr><tr><th scope="row">شهریه</th>{chosen.map(({ course }) => <td key={course.id}>{formatPrice(course.commercial.price_toman)}</td>)}</tr><tr><th scope="row">مدت مرتبط</th>{chosen.map(({ course, row }) => <td key={course.id}>{row.workload.hours === null ? 'نامشخص' : `${asPersianNumber(row.workload.hours)} ساعت`}</td>)}</tr><tr><th scope="row">پروژهٔ عملی</th>{chosen.map(({ course }) => <td key={course.id}>{course.learning_experience.hands_on_project === true ? 'تأییدشده' : 'نامشخص'}</td>)}</tr><tr><th scope="row">Evaluation</th>{chosen.map(({ course }) => <td key={course.id}>{course.rag.topics.evaluation === true ? 'تأییدشده' : 'در منبع عمومی اثبات نشده'}</td>)}</tr><tr><th scope="row">تغییر لازم</th>{chosen.map(({ course, row }) => <td key={course.id}>{row.adjustments[0] || 'نیاز به تغییر ندارد'}</td>)}</tr></tbody></table></div><p className="modal-note"><Info size={16} /> قیمت و جزئیات از صفحات عمومی در تاریخ ثبت داده استخراج شده‌اند؛ پیش از ثبت‌نام از برگزارکننده بررسی کنید.</p></div></div>
+}
+
+export default function App() {
+  const [query, setQuery] = useState<SearchQuery>(initialQuery)
+  const [search, setSearch] = useState('')
+  const [group, setGroup] = useState<Group | 'all'>('all')
+  const [sort, setSort] = useState('recommended')
+  const [mobileFilters, setMobileFilters] = useState(false)
+  const [compareOpen, setCompareOpen] = useState(false)
+  const [methodOpen, setMethodOpen] = useState(false)
+  const [compareIds, setCompareIds] = useState<string[]>([])
+  const [savedIds, setSavedIds] = usePersistentIds('doreh-yab:saved')
+  const ranked = useMemo(() => rankCourses(courses, query), [query])
+  const allRows = useMemo(() => GROUP_ORDER.flatMap(key => ranked.groups[key]), [ranked])
+  const searchFiltered = useMemo(() => allRows.filter(row => {
+    if (!search.trim()) return true
+    const course = courseById.get(row.course_id)!
+    const haystack = normalize([course.title_fa, course.provider, 'RAG', 'پایتون', ...Object.keys(course.rag.topics).filter(key => course.rag.topics[key])].join(' '))
+    return normalize(search).split(/\s+/).every(term => haystack.includes(term))
+  }), [allRows, search])
+  const counts = useMemo(() => Object.fromEntries(GROUP_ORDER.map(key => [key, searchFiltered.filter(row => row.group === key).length])) as Record<Group, number>, [searchFiltered])
+  const shown = useMemo(() => {
+    const rows = searchFiltered.filter(row => group === 'all' || row.group === group)
+    if (sort === 'price') rows.sort((a, b) => (courseById.get(a.course_id)!.commercial.price_toman ?? Infinity) - (courseById.get(b.course_id)!.commercial.price_toman ?? Infinity))
+    else if (sort === 'duration') rows.sort((a, b) => (a.workload.hours ?? Infinity) - (b.workload.hours ?? Infinity))
+    return rows
+  }, [searchFiltered, group, sort])
+  const featuredIds = new Set(ranked.groups.current_matches.slice(0, 3).map(row => row.course_id))
+  const evaluationImportant = query.priorities.required_topics.evaluation !== 'none'
+  const topCandidates = ranked.groups.current_matches.slice(0, 3)
+  const unverifiedEvaluationCount = topCandidates.filter(row => courseById.get(row.course_id)?.rag.topics.evaluation !== true).length
+  const toggleCompare = (id: string) => setCompareIds(current => current.includes(id) ? current.filter(item => item !== id) : current.length < 3 ? [...current, id] : current)
+  const toggleSaved = (id: string) => setSavedIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id])
+  useEffect(() => { document.body.classList.toggle('dialog-open', mobileFilters || compareOpen || methodOpen); return () => document.body.classList.remove('dialog-open') }, [mobileFilters, compareOpen, methodOpen])
+
+  return <div className="app-shell">
+    <header className="site-header"><div className="header-inner"><Logo /><div className="header-search"><Search size={20} /><input aria-label="جست‌وجو در دوره‌های موجود" value={search} onChange={event => setSearch(event.target.value)} placeholder="در این ۸ دوره جست‌وجو کن؛ مثلاً RAG یا LangChain" /><kbd>/</kbd></div><nav className="header-nav" aria-label="ناوبری اصلی"><button onClick={() => setMethodOpen(true)}>روش رتبه‌بندی</button><a href="#results">دوره‌ها</a><span className="saved-label"><Bookmark size={17} /> ذخیره‌شده‌ها <b>{asPersianNumber(savedIds.length)}</b></span></nav><button className="icon-button header-menu" aria-label="باز کردن فیلترها" onClick={() => setMobileFilters(true)}><Menu size={22} /></button></div></header>
+    <main className="page-container"><div className="breadcrumb">خانه <span>/</span> دوره‌های هوش مصنوعی <span>/</span> ساخت RAG</div><div className="page-heading"><div><span className="eyebrow"><span className="eyebrow-line" /> انتخاب آگاهانه، نه حدس زدن</span><h1>دورهٔ مناسب برای ساخت <em>RAG</em> را پیدا کن</h1><p>۸ دورهٔ مستند را با بودجه، زمان و مهارت خودت مقایسه کن؛ همراه با دلیل رتبه و داده‌های نامطمئن.</p></div><div className="hero-stat"><span className="stat-icon"><Sparkles size={23} /></span><strong>{asPersianNumber(ranked.summary.visible_courses)}</strong><span>دوره برای بررسی</span></div></div>
+      <div className="layout-grid"><div className="results-column" id="results"><section className="query-summary"><div className="summary-heading"><div><span className="summary-icon"><CheckCircle2 size={18} /></span><strong>برداشت دوره‌یاب از نیاز شما</strong></div><button className="text-button" onClick={() => setMobileFilters(true)}>ویرایش معیارها <ArrowLeft size={14} /></button></div><div className="summary-chips" tabIndex={0} aria-label="خلاصهٔ معیارها؛ برای پیمایش از کلیدهای جهت‌دار استفاده کنید"><span>هدف: <b>افزودن RAG به محصول</b></span><span>مهارت: <b>Python {levelName[query.skills.python]}</b></span><span>بودجه: <b>{million(query.budget.preferred_max_toman)} تا {million(query.budget.flexible_max_toman)}</b></span><span>زمان: <b>{asPersianNumber(query.time.preferred_hours_per_week)} ساعت/هفته</b></span></div></section>
+        <div className="result-toolbar"><div><span className="toolbar-kicker">نتایج شخصی‌سازی‌شده</span><h2>{asPersianNumber(searchFiltered.length)} دوره برای ساخت RAG با پایتون</h2><p>پیشنهادهای اول با شرایط فعلی سازگارند؛ بقیه با تغییرهای لازم همچنان دیده می‌شوند.</p></div><label className="sort-field"><span>مرتب‌سازی</span><select aria-label="مرتب‌سازی دوره‌ها" value={sort} onChange={event => setSort(event.target.value)}><option value="recommended">پیشنهادی</option><option value="price">کمترین قیمت</option><option value="duration">کوتاه‌ترین مدت</option></select><ChevronDown size={15} /></label></div>
+        <div className="tabs" role="tablist" aria-label="گروه نتایج"><button role="tab" aria-selected={group === 'all'} className={group === 'all' ? 'active' : ''} onClick={() => setGroup('all')}>همه <span>{asPersianNumber(searchFiltered.length)}</span></button>{GROUP_ORDER.slice(0, 3).map(key => <button key={key} role="tab" aria-selected={group === key} className={group === key ? 'active' : ''} onClick={() => setGroup(key)}>{groupName[key]} <span>{asPersianNumber(counts[key])}</span></button>)}</div>
+        <div className="result-message"><Info size={17} /><span>{evaluationImportant && unverifiedEvaluationCount > 0 ? <><strong>پوشش Evaluation برای {asPersianNumber(unverifiedEvaluationCount)} گزینهٔ مناسب شرایط فعلی اثبات نشده است.</strong> پیش از خرید، سرفصل و پروژهٔ دوره را از برگزارکننده بررسی کنید.</> : <><strong>رتبه‌ها تضمین کیفیت دوره نیستند.</strong> قیمت، ظرفیت و جزئیات نامطمئن را پیش از ثبت‌نام از منبع بررسی کنید.</>}</span><button onClick={() => setMethodOpen(true)}>چرا؟</button></div>
+        <div className="cards-heading"><div><span className="eyebrow">با توجه به شرایط شما</span><h2>{group === 'all' ? 'پیشنهادهای اول' : groupName[group]}</h2></div><span>{asPersianNumber(shown.length)} گزینه</span></div>
+        <div className="cards-list">{shown.length ? shown.map((row, index) => <CourseCard key={row.course_id} row={row} course={courseById.get(row.course_id)!} index={index + 1} selected={compareIds.includes(row.course_id)} saved={savedIds.includes(row.course_id)} onCompare={() => toggleCompare(row.course_id)} onSave={() => toggleSaved(row.course_id)} featured={featuredIds.has(row.course_id) && sort === 'recommended'} />) : <div className="empty-state"><Search size={27} /><h3>دوره‌ای با این جست‌وجو پیدا نشد</h3><p>این نمونه فقط ۸ دورهٔ مستند RAG را پوشش می‌دهد. عبارت کوتاه‌تری امتحان کنید.</p><button className="outline-button" onClick={() => setSearch('')}>پاک‌کردن جست‌وجو</button></div>}</div>
+        <p className="data-disclaimer"><Info size={16} /> اطلاعات این نسخه از صفحات عمومی برگزارکنندگان در {dataset.dataset.observed_at} ثبت شده و قیمت یا ظرفیت زنده نیست.</p>
+      </div><div className="desktop-filters"><FilterPanel query={query} onChange={setQuery} onReset={() => setQuery(initialQuery)} count={ranked.summary.visible_courses} /></div></div>
+    </main>
+    {compareIds.length > 0 && <div className="compare-tray" role="region" aria-label="نوار مقایسه"><div className="compare-inner"><div className="tray-count"><div className="tray-icon"><SlidersHorizontal size={20} /></div><div><strong>مقایسهٔ {asPersianNumber(compareIds.length)} دوره</strong><span>تا ۳ دوره را کنار هم ببین</span></div></div><div className="tray-items">{compareIds.map(id => <button key={id} onClick={() => toggleCompare(id)} title="حذف از مقایسه">{courseById.get(id)?.title_fa}<X size={14} /></button>)}</div><button className="primary-button" disabled={compareIds.length < 2} onClick={() => setCompareOpen(true)}>مقایسه کنار هم <ArrowLeft size={17} /></button></div></div>}
+    <div className="mobile-dock"><button onClick={() => setMobileFilters(true)}><Filter size={19} /> فیلترها</button><button disabled={compareIds.length < 2} onClick={() => setCompareOpen(true)}><SlidersHorizontal size={19} /> مقایسه {compareIds.length ? asPersianNumber(compareIds.length) : ''}</button></div>
+    {mobileFilters && <div className="drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setMobileFilters(false) }}><div className="mobile-drawer" role="dialog" aria-modal="true" aria-label="تنظیم فیلترها"><FilterPanel query={query} onChange={setQuery} onReset={() => setQuery(initialQuery)} onClose={() => setMobileFilters(false)} count={ranked.summary.visible_courses} /></div></div>}
+    {compareOpen && <CompareDialog ids={compareIds} rows={allRows} onClose={() => setCompareOpen(false)} onRemove={toggleCompare} />}
+    {methodOpen && <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setMethodOpen(false) }}><div className="method-modal" role="dialog" aria-modal="true" aria-labelledby="method-title"><div className="modal-heading"><div><span className="eyebrow">شفافیت انتخاب</span><h2 id="method-title">دوره‌ها چطور رتبه می‌گیرند؟</h2></div><button className="icon-button" aria-label="بستن توضیح رتبه‌بندی" onClick={() => setMethodOpen(false)}><X size={21} /></button></div><p>امتیاز از تناسب موضوع، پروژه و Evaluation، مهارت، زمان، بودجه، پشتیبانی و کیفیت داده ساخته می‌شود. سپس وضعیت هر دوره نسبت به معیارهای مطلوب و منعطف شما تعیین می‌شود.</p><div className="weight-list">{[['تناسب موضوع',35],['پروژه و Evaluation',20],['مهارت',15],['زمان',10],['بودجه',10],['پشتیبانی',5],['اطمینان داده',5]].map(([label, weight]) => <div key={label}><span>{label}</span><strong>{asPersianNumber(Number(weight))}٪</strong><i style={{ width: `${weight}%` }} /></div>)}</div><div className="method-note"><CircleAlert size={19} /> مجهول بودن یک ویژگی به معنای نبود آن نیست. دوره حذف نمی‌شود؛ کنار همان ویژگی هشدار می‌بینید.</div></div></div>}
+  </div>
+}
