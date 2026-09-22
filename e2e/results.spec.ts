@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
 test('eight documented courses, transparent ranking, and no horizontal overflow', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { level: 1 })).toContainText('RAG')
   await expect(page.locator('[data-testid^="course-"]')).toHaveCount(8)
   await expect(page.locator('[data-testid="course-jahani-langchain-fa"]')).toBeVisible()
@@ -11,21 +11,77 @@ test('eight documented courses, transparent ranking, and no horizontal overflow'
 })
 
 test('filters change ranking without discarding courses, and reset restores baseline', async ({ page, isMobile }) => {
-  await page.goto('/')
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
   if (isMobile) await page.getByRole('button', { name: 'فیلترها', exact: true }).click()
   const panel = isMobile ? page.getByRole('dialog', { name: 'تنظیم فیلترها' }) : page.getByRole('complementary', { name: 'فیلتر و انعطاف' })
-  await panel.getByRole('slider', { name: 'مرز انعطاف بودجه' }).fill('20000000')
+  await panel.getByRole('slider', { name: 'حداکثر بودجه' }).fill('20000000')
   await expect(panel.getByText('۲۰ میلیون')).toBeVisible()
+  await panel.getByRole('slider', { name: 'حداکثر ساعت در هفته' }).fill('16')
+  await panel.getByRole('slider', { name: 'حداکثر مهلت مطلوب' }).fill('32')
   await panel.getByRole('combobox', { name: 'سطح RAG' }).selectOption('beginner')
   if (isMobile) await panel.getByRole('button', { name: /نمایش .* دوره/ }).click()
+  await expect(page.getByText('۶ ساعت/هفته تا ۱۶ ساعت/هفته')).toBeVisible()
+  await expect(page.getByText('۱۲ هفته تا ۳۲ هفته')).toBeVisible()
   await expect(page.locator('[data-testid^="course-"]')).toHaveCount(8)
   if (isMobile) await page.getByRole('button', { name: 'فیلترها', exact: true }).click()
   await panel.getByRole('button', { name: 'بازنشانی' }).click()
-  await expect(panel.getByRole('slider', { name: 'مرز انعطاف بودجه' })).toHaveValue('10000000')
+  await expect(panel.getByRole('slider', { name: 'حداکثر بودجه' })).toHaveValue('10000000')
+  await expect(panel.getByRole('slider', { name: 'حداکثر ساعت در هفته' })).toHaveValue('10')
+  await expect(panel.getByRole('slider', { name: 'حداکثر مهلت مطلوب' })).toHaveValue('20')
+})
+
+test('two handles share each range track, with Persian dates and skill levels', async ({ page, isMobile }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  if (isMobile) await page.getByRole('button', { name: 'فیلترها', exact: true }).click()
+  const panel = isMobile ? page.getByRole('dialog', { name: 'تنظیم فیلترها' }) : page.getByRole('complementary', { name: 'فیلتر و انعطاف' })
+  for (const [minimum, maximum] of [
+    ['حداقل بودجه', 'حداکثر بودجه'],
+    ['حداقل ساعت در هفته', 'حداکثر ساعت در هفته'],
+    ['حداقل مهلت مطلوب', 'حداکثر مهلت مطلوب'],
+  ]) {
+    const first = await panel.getByRole('slider', { name: minimum }).boundingBox()
+    const second = await panel.getByRole('slider', { name: maximum }).boundingBox()
+    expect(Math.abs((first?.y ?? 0) - (second?.y ?? 0))).toBeLessThanOrEqual(3)
+  }
+  if (isMobile) await panel.getByRole('button', { name: /نمایش .* دوره/ }).click()
+  await expect(page.locator('[data-testid="course-udemyiran-langgraph"]')).toContainText('بدون تجربه')
+  await expect(page.locator('[data-testid="course-udemyiran-langgraph"]')).toContainText('مقدماتی')
+  await expect(page.locator('[data-testid="course-jahani-langchain-fa"]')).toContainText('۱۴۰۵/۰۶/۲۷')
+  await expect(page.locator('.data-disclaimer')).toContainText('۱۴۰۵/۰۶/۲۷')
+})
+
+test('desktop filter bottom is reachable without scrolling the results page', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'Desktop sidebar only')
+  await page.setViewportSize({ width: 1440, height: 650 })
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  const panel = page.getByRole('complementary', { name: 'فیلتر و انعطاف' })
+  const content = panel.locator('.filter-content')
+  await expect(panel.getByRole('button', { name: /نمایش .* دوره/ })).toBeInViewport()
+  await content.evaluate(element => { element.scrollTop = element.scrollHeight })
+  await expect(panel.getByRole('checkbox', { name: 'پشتیبانی مدرس' })).toBeInViewport()
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+})
+
+test('desktop budget range handles can be dragged independently', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'Mouse dragging is checked on desktop')
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  const panel = page.getByRole('complementary', { name: 'فیلتر و انعطاف' })
+  const upper = panel.getByRole('slider', { name: 'حداکثر بودجه' })
+  const bounds = await upper.boundingBox()
+  expect(bounds).not.toBeNull()
+  const y = bounds!.y + bounds!.height / 2
+  const start = bounds!.x + bounds!.width * (10 / 30)
+  const end = bounds!.x + bounds!.width * (15 / 30)
+  await page.mouse.move(start, y)
+  await page.mouse.down()
+  await page.mouse.move(end, y, { steps: 8 })
+  await page.mouse.up()
+  expect(Number(await upper.inputValue())).toBeGreaterThanOrEqual(14_000_000)
+  await expect(panel.getByRole('slider', { name: 'حداقل بودجه' })).toHaveValue('5000000')
 })
 
 test('compare two courses side by side', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
   const cards = page.locator('[data-testid^="course-"]')
   await cards.nth(0).getByRole('button', { name: 'افزودن به مقایسه' }).click()
   await cards.nth(1).getByRole('button', { name: 'افزودن به مقایسه' }).click()
@@ -35,7 +91,7 @@ test('compare two courses side by side', async ({ page }) => {
 })
 
 test('search is scoped to the eight-course dataset', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
   await page.getByRole('textbox', { name: 'جست‌وجو در دوره‌های موجود' }).fill('ناموجود')
   await expect(page.getByText('دوره‌ای با این جست‌وجو پیدا نشد')).toBeVisible()
   await page.getByRole('button', { name: 'پاک‌کردن جست‌وجو' }).click()
@@ -43,7 +99,7 @@ test('search is scoped to the eight-course dataset', async ({ page }) => {
 })
 
 test('page has no serious or critical automated accessibility violations', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
   const report = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
   const serious = report.violations.filter(item => item.impact === 'critical' || item.impact === 'serious')
   const concise = serious.map(item => ({
@@ -54,6 +110,7 @@ test('page has no serious or critical automated accessibility violations', async
 })
 
 test('visual reference screenshot', async ({ page }, testInfo) => {
-  await page.goto('/')
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.screenshot({ path: testInfo.outputPath('results-viewport.png') })
   await page.screenshot({ path: testInfo.outputPath('results-full.png'), fullPage: true })
 })
