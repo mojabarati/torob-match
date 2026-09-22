@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/mojabarati/doreh-yab/data/search-query.schema.json",
-  "title": "DorehYab dynamic search query",
+  "$id": "https://github.com/mojabarati/torob-match/data/search-query.schema.json",
+  "title": "Torob Match dynamic search query",
   "type": "object",
   "required": ["id", "persona", "goal_fa", "persian_access_required", "budget", "time", "skills", "priorities"],
   "properties": {

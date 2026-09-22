@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/mojabarati/doreh-yab/data/course.schema.json",
-  "title": "DorehYab course record",
+  "$id": "https://github.com/mojabarati/torob-match/data/course.schema.json",
+  "title": "Torob Match course record",
   "type": "object",
   "required": [
     "id",

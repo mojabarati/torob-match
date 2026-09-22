@@ -1,5 +1,5 @@
 {
-  "product_name": "دوره‌یاب",
+  "product_name": "ترب مچ",
   "query_id": "sara-rag-v2",
   "scoring_version": "2.0.0",
   "generated_from": {"courses": "data/courses.json", "query": "data/sample-query.json"},

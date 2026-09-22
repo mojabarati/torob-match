@@ -1,13 +1,36 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import App from './App'
 
 afterEach(() => {
   cleanup()
   localStorage.clear()
+  document.documentElement.dataset.theme = 'light'
+  window.history.replaceState({}, '', '/')
+})
+
+describe('home and brand experience', () => {
+  it('starts from the Torob Match search homepage and opens results', () => {
+    render(<App />)
+    expect(screen.getByRole('heading', { name: /دوره‌ای را پیدا کن/ })).toBeInTheDocument()
+    expect(screen.getAllByLabelText(/ترب مچ/).length).toBeGreaterThan(0)
+    fireEvent.change(screen.getByRole('textbox', { name: 'چه چیزی می‌خواهی یاد بگیری؟' }), { target: { value: 'ساخت RAG با پایتون' } })
+    fireEvent.click(screen.getByRole('button', { name: /جست‌وجو/ }))
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('RAG')
+    expect(window.location.pathname).toBe('/search')
+  })
+
+  it('switches between light and dark modes', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'فعال‌کردن حالت تیره' }))
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(localStorage.getItem('torob-match:theme')).toBe('dark')
+  })
 })
 
 describe('results experience', () => {
+  beforeEach(() => window.history.replaceState({}, '', '/search?q=ساخت%20RAG%20با%20پایتون'))
+
   it('renders every documented course and the source-data warning', () => {
     render(<App />)
     expect(screen.getAllByTestId(/^course-/)).toHaveLength(8)

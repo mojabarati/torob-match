@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import {
   ArrowLeft, ArrowUpLeft, Bookmark, Check, CheckCircle2, ChevronDown, CircleAlert,
-  Clock3, Filter, Heart, Info, Menu, Search, SlidersHorizontal,
-  Sparkles, X,
+  Clock3, Filter, Heart, Info, Menu, Moon, Search, SlidersHorizontal,
+  Sparkles, Sun, X,
 } from 'lucide-react'
 import dataset from '../data/courses.json'
 import sampleQuery from '../data/sample-query.json'
@@ -24,6 +24,7 @@ const asPersianNumber = (value: number) => new Intl.NumberFormat('fa-IR', { maxi
 const formatPrice = (price: number | null) => price === null ? 'نیازمند استعلام' : price === 0 ? 'رایگان' : `${asPersianNumber(price)} تومان`
 const million = (value: number) => `${asPersianNumber(value / 1_000_000)} میلیون`
 const normalize = (value: string) => value.toLocaleLowerCase('fa').replace(/[ي]/g, 'ی').replace(/[ك]/g, 'ک').trim()
+const scrollToTop = () => { if (!navigator.userAgent.includes('jsdom')) window.scrollTo({ top: 0 }) }
 
 function usePersistentIds(key: string) {
   const [ids, setIds] = useState<string[]>(() => {
@@ -33,10 +34,60 @@ function usePersistentIds(key: string) {
   return [ids, setIds] as const
 }
 
-function Logo() {
-  return <div className="brand" aria-label="دوره‌یاب">
-    <div className="brand-mark" aria-hidden="true"><span /></div>
-    <div className="brand-text"><strong>دوره‌یاب</strong><small>انتخاب مطمئن برای یادگیری</small></div>
+type Theme = 'light' | 'dark'
+type View = 'home' | 'results'
+
+const getView = (): View => window.location.pathname.startsWith('/search') ? 'results' : 'home'
+const getIntent = () => new URLSearchParams(window.location.search).get('q')?.trim() || 'ساخت RAG با پایتون'
+
+function Logo({ onClick, large = false, showText = false }: { onClick?: () => void; large?: boolean; showText?: boolean }) {
+  const content = <>
+    {large ? <span className="brand-lockup-frame" aria-hidden="true"><img className="brand-lockup brand-lockup-light" src="/brand/torob-match-logo.png" alt="" /><img className="brand-lockup brand-lockup-dark" src="/brand/torob-match-logo-dark.png" alt="" /></span> : <>
+      <span className="brand-assets" aria-hidden="true"><img className="brand-icon" src="/brand/torob-match-icon.png" alt="" /></span>
+      {showText && <span className="brand-text"><strong>ترب مچ</strong><small>دوره‌ای که بهت میاد</small></span>}
+    </>}
+  </>
+  if (!onClick) return <div className={`brand ${large ? 'brand-large' : ''}`} aria-label="ترب مچ">{content}</div>
+  return <button type="button" className={`brand ${large ? 'brand-large' : ''}`} aria-label="ترب مچ؛ بازگشت به صفحهٔ اصلی" onClick={onClick}>{content}</button>
+}
+
+function ThemeToggle({ theme, onToggle }: { theme: Theme; onToggle: () => void }) {
+  const next = theme === 'light' ? 'تیره' : 'روشن'
+  return <button type="button" className="theme-toggle" onClick={onToggle} aria-label={`فعال‌کردن حالت ${next}`} title={`حالت ${next}`}>
+    {theme === 'light' ? <Moon size={19} /> : <Sun size={19} />}
+  </button>
+}
+
+function HomePage({ theme, intent, onIntentChange, onSearch, onToggleTheme }: {
+  theme: Theme
+  intent: string
+  onIntentChange: (value: string) => void
+  onSearch: (value: string) => void
+  onToggleTheme: () => void
+}) {
+  const suggestions = ['ساخت RAG با پایتون', 'آموزش LangChain فارسی', 'دورهٔ RAG پروژه‌محور']
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault()
+    if (intent.trim()) onSearch(intent.trim())
+  }
+  return <div className="home-shell">
+    <header className="home-header"><div className="home-header-inner"><Logo showText onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} /><div className="home-actions"><span>۸ دورهٔ مستند</span><ThemeToggle theme={theme} onToggle={onToggleTheme} /></div></div></header>
+    <main className="home-main">
+      <section className="home-hero" aria-labelledby="home-title">
+        <div className="home-glow home-glow-one" aria-hidden="true" /><div className="home-glow home-glow-two" aria-hidden="true" />
+        <Logo large />
+        <span className="home-eyebrow"><Sparkles size={17} /> جست‌وجوی دوره با معیارهای واقعی تو</span>
+        <h1 id="home-title">دوره‌ای را پیدا کن که واقعاً<br /><em>به شرایطت می‌خورد</em></h1>
+        <p>هدفت را بنویس؛ ترب مچ گزینه‌ها را با بودجه، زمان، مهارت و کیفیت داده مقایسه می‌کند و دلیل هر پیشنهاد را شفاف نشان می‌دهد.</p>
+        <form className="home-search" onSubmit={submit} role="search">
+          <Search size={23} aria-hidden="true" />
+          <input autoFocus aria-label="چه چیزی می‌خواهی یاد بگیری؟" value={intent} onChange={event => onIntentChange(event.target.value)} placeholder="مثلاً می‌خواهم RAG را با پایتون به محصول اضافه کنم" />
+          <button type="submit">جست‌وجو <ArrowLeft size={19} /></button>
+        </form>
+        <div className="home-suggestions"><span>جست‌وجوهای پیشنهادی:</span>{suggestions.map(item => <button key={item} type="button" onClick={() => { onIntentChange(item); onSearch(item) }}>{item}</button>)}</div>
+      </section>
+      <p className="home-scope"><Info size={15} /> نسخهٔ فعلی روی دوره‌های مستند RAG و Python تمرکز دارد و برای نمایش مفهوم محصول ساخته شده است.</p>
+    </main>
   </div>
 }
 
@@ -153,6 +204,13 @@ function CompareDialog({ ids, rows, onClose, onRemove }: { ids: string[]; rows: 
 
 export default function App() {
   const desktopFiltersRef = useRef<HTMLDivElement>(null)
+  const [view, setView] = useState<View>(getView)
+  const [intent, setIntent] = useState(getIntent)
+  const [theme, setTheme] = useState<Theme>(() => {
+    const stored = localStorage.getItem('torob-match:theme')
+    if (stored === 'light' || stored === 'dark') return stored
+    return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  })
   const [query, setQuery] = useState<SearchQuery>(initialQuery)
   const [search, setSearch] = useState('')
   const [group, setGroup] = useState<Group | 'all'>('all')
@@ -161,7 +219,7 @@ export default function App() {
   const [compareOpen, setCompareOpen] = useState(false)
   const [methodOpen, setMethodOpen] = useState(false)
   const [compareIds, setCompareIds] = useState<string[]>([])
-  const [savedIds, setSavedIds] = usePersistentIds('doreh-yab:saved')
+  const [savedIds, setSavedIds] = usePersistentIds('torob-match:saved')
   const ranked = useMemo(() => rankCourses(courses, query), [query])
   const allRows = useMemo(() => GROUP_ORDER.flatMap(key => ranked.groups[key]), [ranked])
   const searchFiltered = useMemo(() => allRows.filter(row => {
@@ -183,6 +241,33 @@ export default function App() {
   const unverifiedEvaluationCount = topCandidates.filter(row => courseById.get(row.course_id)?.rag.topics.evaluation !== true).length
   const toggleCompare = (id: string) => setCompareIds(current => current.includes(id) ? current.filter(item => item !== id) : current.length < 3 ? [...current, id] : current)
   const toggleSaved = (id: string) => setSavedIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id])
+  const goHome = () => {
+    window.history.pushState({}, '', '/')
+    setView('home')
+    scrollToTop()
+  }
+  const showResults = (value: string) => {
+    const clean = value.trim() || 'ساخت RAG با پایتون'
+    setIntent(clean)
+    setSearch('')
+    window.history.pushState({}, '', `/search?q=${encodeURIComponent(clean)}`)
+    setView('results')
+    scrollToTop()
+  }
+  const toggleTheme = () => setTheme(current => current === 'light' ? 'dark' : 'light')
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    document.documentElement.style.colorScheme = theme
+    localStorage.setItem('torob-match:theme', theme)
+  }, [theme])
+  useEffect(() => {
+    const onPopState = () => {
+      setView(getView())
+      setIntent(getIntent())
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
   useEffect(() => { document.body.classList.toggle('dialog-open', mobileFilters || compareOpen || methodOpen); return () => document.body.classList.remove('dialog-open') }, [mobileFilters, compareOpen, methodOpen])
   useLayoutEffect(() => {
     const updateFilterHeight = () => {
@@ -198,10 +283,12 @@ export default function App() {
     }
   }, [])
 
+  if (view === 'home') return <HomePage theme={theme} intent={intent} onIntentChange={setIntent} onSearch={showResults} onToggleTheme={toggleTheme} />
+
   return <div className="app-shell">
-    <header className="site-header"><div className="header-inner"><Logo /><div className="header-search"><Search size={20} /><input aria-label="جست‌وجو در دوره‌های موجود" value={search} onChange={event => setSearch(event.target.value)} placeholder="در این ۸ دوره جست‌وجو کن؛ مثلاً RAG یا LangChain" /><kbd>/</kbd></div><nav className="header-nav" aria-label="ناوبری اصلی"><button onClick={() => setMethodOpen(true)}>روش رتبه‌بندی</button><a href="#results">دوره‌ها</a><span className="saved-label"><Bookmark size={17} /> ذخیره‌شده‌ها <b>{asPersianNumber(savedIds.length)}</b></span></nav><button className="icon-button header-menu" aria-label="باز کردن فیلترها" onClick={() => setMobileFilters(true)}><Menu size={22} /></button></div></header>
+    <header className="site-header"><div className="header-inner"><Logo onClick={goHome} /><div className="header-search"><Search size={20} /><input aria-label="جست‌وجو در دوره‌های موجود" value={search} onChange={event => setSearch(event.target.value)} placeholder="در این ۸ دوره جست‌وجو کن؛ مثلاً RAG یا LangChain" /><kbd>/</kbd></div><nav className="header-nav" aria-label="ناوبری اصلی"><button onClick={() => setMethodOpen(true)}>روش رتبه‌بندی</button><a href="#results">دوره‌ها</a><span className="saved-label"><Bookmark size={17} /> ذخیره‌شده‌ها <b>{asPersianNumber(savedIds.length)}</b></span></nav><ThemeToggle theme={theme} onToggle={toggleTheme} /><button className="icon-button header-menu" aria-label="باز کردن فیلترها" onClick={() => setMobileFilters(true)}><Menu size={22} /></button></div></header>
     <main className="page-container"><div className="breadcrumb">خانه <span>/</span> دوره‌های هوش مصنوعی <span>/</span> ساخت RAG</div><div className="page-heading"><div><span className="eyebrow"><span className="eyebrow-line" /> انتخاب آگاهانه، نه حدس زدن</span><h1>دورهٔ مناسب برای ساخت <em>RAG</em> را پیدا کن</h1><p>۸ دورهٔ مستند را با بودجه، زمان و مهارت خودت مقایسه کن؛ همراه با دلیل رتبه و داده‌های نامطمئن.</p></div><div className="hero-stat"><span className="stat-icon"><Sparkles size={23} /></span><strong>{asPersianNumber(ranked.summary.visible_courses)}</strong><span>دوره برای بررسی</span></div></div>
-      <div className="layout-grid"><div className="results-column" id="results"><section className="query-summary"><div className="summary-heading"><div><span className="summary-icon"><CheckCircle2 size={18} /></span><strong>برداشت دوره‌یاب از نیاز شما</strong></div><button className="text-button" onClick={() => setMobileFilters(true)}>ویرایش معیارها <ArrowLeft size={14} /></button></div><div className="summary-chips" tabIndex={0} aria-label="خلاصهٔ معیارها؛ برای پیمایش از کلیدهای جهت‌دار استفاده کنید"><span>هدف: <b>افزودن RAG به محصول</b></span><span>مهارت: <b>Python {levelName[query.skills.python]}</b></span><span>بودجه: <b><bdi dir="rtl">{million(query.budget.preferred_max_toman)} تا {million(query.budget.flexible_max_toman)}</bdi></b></span><span>ساعت هفتگی: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_hours_per_week)} ساعت/هفته تا {asPersianNumber(query.time.flexible_hours_per_week)} ساعت/هفته</bdi></b></span><span>مهلت: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_deadline_weeks)} هفته تا {asPersianNumber(query.time.flexible_deadline_weeks)} هفته</bdi></b></span></div></section>
+      <div className="layout-grid"><div className="results-column" id="results"><section className="query-summary"><div className="summary-heading"><div><span className="summary-icon"><CheckCircle2 size={18} /></span><strong>برداشت ترب مچ از نیاز شما</strong></div><button className="text-button" onClick={() => setMobileFilters(true)}>ویرایش معیارها <ArrowLeft size={14} /></button></div><div className="summary-chips" tabIndex={0} aria-label="خلاصهٔ معیارها؛ برای پیمایش از کلیدهای جهت‌دار استفاده کنید"><span>جست‌وجو: <b>{intent}</b></span><span>مهارت: <b>Python {levelName[query.skills.python]}</b></span><span>بودجه: <b><bdi dir="rtl">{million(query.budget.preferred_max_toman)} تا {million(query.budget.flexible_max_toman)}</bdi></b></span><span>ساعت هفتگی: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_hours_per_week)} ساعت/هفته تا {asPersianNumber(query.time.flexible_hours_per_week)} ساعت/هفته</bdi></b></span><span>مهلت: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_deadline_weeks)} هفته تا {asPersianNumber(query.time.flexible_deadline_weeks)} هفته</bdi></b></span></div></section>
         <div className="result-toolbar"><div><span className="toolbar-kicker">نتایج شخصی‌سازی‌شده</span><h2>{asPersianNumber(searchFiltered.length)} دوره برای ساخت RAG با پایتون</h2><p>پیشنهادهای اول با شرایط فعلی سازگارند؛ بقیه با تغییرهای لازم همچنان دیده می‌شوند.</p></div><label className="sort-field"><span>مرتب‌سازی</span><select aria-label="مرتب‌سازی دوره‌ها" value={sort} onChange={event => setSort(event.target.value)}><option value="recommended">پیشنهادی</option><option value="price">کمترین قیمت</option><option value="duration">کوتاه‌ترین مدت</option></select><ChevronDown size={15} /></label></div>
         <div className="tabs" role="tablist" aria-label="گروه نتایج"><button role="tab" aria-selected={group === 'all'} className={group === 'all' ? 'active' : ''} onClick={() => setGroup('all')}>همه <span>{asPersianNumber(searchFiltered.length)}</span></button>{GROUP_ORDER.slice(0, 3).map(key => <button key={key} role="tab" aria-selected={group === key} className={group === key ? 'active' : ''} onClick={() => setGroup(key)}>{groupName[key]} <span>{asPersianNumber(counts[key])}</span></button>)}</div>
         <div className="result-message"><Info size={17} /><span>{evaluationImportant && unverifiedEvaluationCount > 0 ? <><strong>پوشش Evaluation برای {asPersianNumber(unverifiedEvaluationCount)} گزینهٔ مناسب شرایط فعلی اثبات نشده است.</strong> پیش از خرید، سرفصل و پروژهٔ دوره را از برگزارکننده بررسی کنید.</> : <><strong>رتبه‌ها تضمین کیفیت دوره نیستند.</strong> قیمت، ظرفیت و جزئیات نامطمئن را پیش از ثبت‌نام از منبع بررسی کنید.</>}</span><button onClick={() => setMethodOpen(true)}>چرا؟</button></div>

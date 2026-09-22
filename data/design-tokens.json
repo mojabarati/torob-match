@@ -1,7 +1,7 @@
 {
   "$schema": "https://design-tokens.github.io/community-group/format/",
   "meta": {
-    "product": "دوره‌یاب",
+    "product": "ترب مچ",
     "theme": "light",
     "fontFamily": "Vazirmatn",
     "description": "منبع مشترک High-fidelity در Figma و پیاده‌سازی React"

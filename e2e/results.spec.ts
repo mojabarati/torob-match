@@ -1,8 +1,29 @@
 import { expect, test } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 
-test('eight documented courses, transparent ranking, and no horizontal overflow', async ({ page }) => {
+const resultsUrl = '/search?q=%D8%B3%D8%A7%D8%AE%D8%AA%20RAG%20%D8%A8%D8%A7%20%D9%BE%D8%A7%DB%8C%D8%AA%D9%88%D9%86'
+
+test('home search leads to the approved results experience', async ({ page }) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('دوره‌ای را پیدا کن')
+  await expect(page.getByRole('button', { name: /ترب مچ؛ بازگشت/ }).first()).toBeVisible()
+  await page.getByRole('textbox', { name: 'چه چیزی می‌خواهی یاد بگیری؟' }).fill('ساخت RAG با پایتون')
+  await page.getByRole('button', { name: 'جست‌وجو', exact: true }).click()
+  await expect(page).toHaveURL(/\/search\?q=/)
+  await expect(page.locator('[data-testid^="course-"]')).toHaveCount(8)
+})
+
+test('theme can be changed and persists between pages', async ({ page }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'فعال‌کردن حالت تیره' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await page.getByRole('button', { name: 'جست‌وجو', exact: true }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await expect(page.getByRole('button', { name: 'فعال‌کردن حالت روشن' })).toBeVisible()
+})
+
+test('eight documented courses, transparent ranking, and no horizontal overflow', async ({ page }) => {
+  await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
   await expect(page.getByRole('heading', { level: 1 })).toContainText('RAG')
   await expect(page.locator('[data-testid^="course-"]')).toHaveCount(8)
   await expect(page.locator('[data-testid="course-jahani-langchain-fa"]')).toBeVisible()
@@ -11,7 +32,7 @@ test('eight documented courses, transparent ranking, and no horizontal overflow'
 })
 
 test('filters change ranking without discarding courses, and reset restores baseline', async ({ page, isMobile }) => {
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
   if (isMobile) await page.getByRole('button', { name: 'فیلترها', exact: true }).click()
   const panel = isMobile ? page.getByRole('dialog', { name: 'تنظیم فیلترها' }) : page.getByRole('complementary', { name: 'فیلتر و انعطاف' })
   await panel.getByRole('slider', { name: 'حداکثر بودجه' }).fill('20000000')
@@ -31,7 +52,7 @@ test('filters change ranking without discarding courses, and reset restores base
 })
 
 test('two handles share each range track, with Persian dates and skill levels', async ({ page, isMobile }) => {
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
   if (isMobile) await page.getByRole('button', { name: 'فیلترها', exact: true }).click()
   const panel = isMobile ? page.getByRole('dialog', { name: 'تنظیم فیلترها' }) : page.getByRole('complementary', { name: 'فیلتر و انعطاف' })
   for (const [minimum, maximum] of [
@@ -53,7 +74,7 @@ test('two handles share each range track, with Persian dates and skill levels', 
 test('desktop filter bottom is reachable without scrolling the results page', async ({ page, isMobile }) => {
   test.skip(isMobile, 'Desktop sidebar only')
   await page.setViewportSize({ width: 1440, height: 650 })
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
   const panel = page.getByRole('complementary', { name: 'فیلتر و انعطاف' })
   const content = panel.locator('.filter-content')
   await expect(panel.getByRole('button', { name: /نمایش .* دوره/ })).toBeInViewport()
@@ -64,7 +85,7 @@ test('desktop filter bottom is reachable without scrolling the results page', as
 
 test('desktop budget range handles can be dragged independently', async ({ page, isMobile }) => {
   test.skip(isMobile, 'Mouse dragging is checked on desktop')
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
   const panel = page.getByRole('complementary', { name: 'فیلتر و انعطاف' })
   const upper = panel.getByRole('slider', { name: 'حداکثر بودجه' })
   const bounds = await upper.boundingBox()
@@ -81,7 +102,7 @@ test('desktop budget range handles can be dragged independently', async ({ page,
 })
 
 test('compare two courses side by side', async ({ page }) => {
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
   const cards = page.locator('[data-testid^="course-"]')
   await cards.nth(0).getByRole('button', { name: 'افزودن به مقایسه' }).click()
   await cards.nth(1).getByRole('button', { name: 'افزودن به مقایسه' }).click()
@@ -91,7 +112,7 @@ test('compare two courses side by side', async ({ page }) => {
 })
 
 test('search is scoped to the eight-course dataset', async ({ page }) => {
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
   await page.getByRole('textbox', { name: 'جست‌وجو در دوره‌های موجود' }).fill('ناموجود')
   await expect(page.getByText('دوره‌ای با این جست‌وجو پیدا نشد')).toBeVisible()
   await page.getByRole('button', { name: 'پاک‌کردن جست‌وجو' }).click()
@@ -99,7 +120,7 @@ test('search is scoped to the eight-course dataset', async ({ page }) => {
 })
 
 test('page has no serious or critical automated accessibility violations', async ({ page }) => {
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
   const report = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
   const serious = report.violations.filter(item => item.impact === 'critical' || item.impact === 'serious')
   const concise = serious.map(item => ({
@@ -110,7 +131,18 @@ test('page has no serious or critical automated accessibility violations', async
 })
 
 test('visual reference screenshot', async ({ page }, testInfo) => {
-  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
   await page.screenshot({ path: testInfo.outputPath('results-viewport.png') })
   await page.screenshot({ path: testInfo.outputPath('results-full.png'), fullPage: true })
+})
+
+test('home and dark results visual references', async ({ page }, testInfo) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  await page.locator('.brand-lockup').evaluateAll(images => Promise.all(images.map(image => (image as HTMLImageElement).decode())))
+  await page.screenshot({ path: testInfo.outputPath('home-light.png'), fullPage: true })
+  await page.getByRole('button', { name: 'فعال‌کردن حالت تیره' }).click()
+  await page.waitForTimeout(300)
+  await page.screenshot({ path: testInfo.outputPath('home-dark.png'), fullPage: true })
+  await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
+  await page.screenshot({ path: testInfo.outputPath('results-dark.png') })
 })

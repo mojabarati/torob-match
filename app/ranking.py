@@ -1,4 +1,4 @@
-"""Dynamic and explainable ranking for the DorehYab prototype."""
+"""Dynamic and explainable ranking for the Torob Match prototype."""
 
 from __future__ import annotations
 
@@ -442,7 +442,7 @@ def with_query_changes(query: dict[str, Any], changes: dict[str, Any]) -> dict[s
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Rank DorehYab course records")
+    parser = argparse.ArgumentParser(description="Rank Torob Match course records")
     parser.add_argument("--courses", type=Path, required=True)
     parser.add_argument("--query", type=Path, required=True)
     args = parser.parse_args()
