@@ -14,9 +14,11 @@ describe('home and brand experience', () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: /دوره‌ای را پیدا کن/ })).toBeInTheDocument()
     expect(screen.getAllByLabelText(/ترب مچ/).length).toBeGreaterThan(0)
+    expect(screen.queryByText('۸ دورهٔ مستند')).not.toBeInTheDocument()
     fireEvent.change(screen.getByRole('textbox', { name: 'چه چیزی می‌خواهی یاد بگیری؟' }), { target: { value: 'ساخت RAG با پایتون' } })
     fireEvent.click(screen.getByRole('button', { name: /جست‌وجو/ }))
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('RAG')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('دوره‌های مناسب برای ساخت RAG با پایتون')
+    expect(screen.getByRole('heading', { level: 2, name: '۸ نتیجه برای ساخت RAG با پایتون' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/search')
   })
 
@@ -34,6 +36,9 @@ describe('results experience', () => {
   it('renders every documented course and the source-data warning', () => {
     render(<App />)
     expect(screen.getAllByTestId(/^course-/)).toHaveLength(8)
+    const firstCard = screen.getAllByTestId(/^course-/)[0]
+    expect(within(firstCard).getByLabelText('رتبهٔ ۱')).toHaveTextContent('۱')
+    expect(within(firstCard).queryByText('گزینهٔ ۱')).not.toBeInTheDocument()
     expect(screen.getAllByText(/پوشش Evaluation برای/).length).toBeGreaterThan(0)
     expect(screen.getByText(/قیمت یا ظرفیت زنده نیست/)).toBeInTheDocument()
     expect(screen.getByText('۶ ساعت/هفته تا ۱۰ ساعت/هفته')).toBeInTheDocument()
