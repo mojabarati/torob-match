@@ -111,12 +111,25 @@ test('compare two courses side by side', async ({ page }) => {
   await expect(page.getByRole('columnheader')).toHaveCount(3)
 })
 
-test('search is scoped to the eight-course dataset', async ({ page }) => {
+test('search is honest outside the dataset and can return to a supported query', async ({ page }) => {
   await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
-  await page.getByRole('textbox', { name: 'جست‌وجو در دوره‌های موجود' }).fill('ناموجود')
-  await expect(page.getByText('دوره‌ای با این جست‌وجو پیدا نشد')).toBeVisible()
-  await page.getByRole('button', { name: 'پاک‌کردن جست‌وجو' }).click()
+  await page.getByRole('textbox', { name: 'جست‌وجوی دوره' }).fill('دوره TypeScript برای فرانت‌اند')
+  await page.getByRole('textbox', { name: 'جست‌وجوی دوره' }).press('Enter')
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('دادهٔ کافی نداریم')
+  await expect(page.locator('[data-testid^="course-"]')).toHaveCount(0)
+  await page.getByRole('button', { name: /جست‌وجوی RAG با پایتون/ }).click()
   await expect(page.locator('[data-testid^="course-"]')).toHaveCount(8)
+})
+
+test('a natural-language search updates constraints and intent-aware ranking', async ({ page }) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' })
+  const phrase = 'آموزش LangChain فارسی پروژه‌محور با بودجه ۳ تا ۸ میلیون و ۸ ساعت در هفته'
+  await page.getByRole('textbox', { name: 'چه چیزی می‌خواهی یاد بگیری؟' }).fill(phrase)
+  await page.getByRole('button', { name: 'جست‌وجو', exact: true }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(phrase)
+  await expect(page.getByText('۳ میلیون تا ۸ میلیون')).toBeVisible()
+  await expect(page.getByText('۸ ساعت/هفته تا ۱۰ ساعت/هفته')).toBeVisible()
+  await expect(page.locator('[data-testid^="course-"]').first()).toHaveAttribute('data-testid', 'course-jahani-langchain-fa')
 })
 
 test('page has no serious or critical automated accessibility violations', async ({ page }) => {

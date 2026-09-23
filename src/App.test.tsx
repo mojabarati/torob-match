@@ -28,6 +28,18 @@ describe('home and brand experience', () => {
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(localStorage.getItem('torob-match:theme')).toBe('dark')
   })
+
+  it('shows an honest no-data state for topics outside the documented dataset', () => {
+    render(<App />)
+    const input = screen.getByRole('textbox', { name: 'چه چیزی می‌خواهی یاد بگیری؟' })
+    fireEvent.change(input, { target: { value: 'دوره TypeScript برای فرانت‌اند' } })
+    fireEvent.submit(input.closest('form')!)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('دادهٔ کافی نداریم')
+    expect(screen.getByText(/مجموعهٔ مستند این نسخه روی RAG/)).toBeInTheDocument()
+    expect(screen.queryAllByTestId(/^course-/)).toHaveLength(0)
+    fireEvent.click(screen.getByRole('button', { name: /جست‌وجوی RAG با پایتون/ }))
+    expect(screen.getAllByTestId(/^course-/)).toHaveLength(8)
+  })
 })
 
 describe('results experience', () => {
@@ -77,5 +89,17 @@ describe('results experience', () => {
     fireEvent.click(within(cards[1]).getByRole('button', { name: /افزودن به مقایسه/ }))
     fireEvent.click(screen.getByRole('button', { name: /مقایسه کنار هم/ }))
     expect(screen.getByRole('dialog', { name: 'مقایسهٔ کنارهمی دوره‌ها' })).toBeInTheDocument()
+  })
+
+  it('runs a new search from the results header and extracts its constraints', () => {
+    render(<App />)
+    const input = screen.getByRole('textbox', { name: 'جست‌وجوی دوره' })
+    fireEvent.change(input, { target: { value: 'آموزش LangChain فارسی پروژه‌محور با بودجه ۳ تا ۸ میلیون و ۸ ساعت در هفته' } })
+    fireEvent.submit(input.closest('form')!)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('آموزش LangChain فارسی پروژه‌محور')
+    expect(screen.getByText('۳ میلیون تا ۸ میلیون')).toBeInTheDocument()
+    expect(screen.getByText('۸ ساعت/هفته تا ۱۰ ساعت/هفته')).toBeInTheDocument()
+    expect(screen.getAllByTestId(/^course-/)[0]).toHaveAttribute('data-testid', 'course-jahani-langchain-fa')
+    expect(decodeURIComponent(window.location.search)).toContain('LangChain')
   })
 })
