@@ -23,10 +23,14 @@ describe('home and brand experience', () => {
   })
 
   it('switches between light and dark modes', () => {
-    render(<App />)
+    const { container } = render(<App />)
+    const logo = container.querySelector('.brand-lockup') as HTMLImageElement
+    expect(logo.getAttribute('src')).toBe('/brand/torob-match-logo.png')
     fireEvent.click(screen.getByRole('button', { name: 'فعال‌کردن حالت تیره' }))
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(localStorage.getItem('torob-match:theme')).toBe('dark')
+    expect(container.querySelectorAll('.brand-lockup')).toHaveLength(1)
+    expect(logo.getAttribute('src')).toBe('/brand/torob-match-logo.png')
   })
 
   it('shows an honest no-data state for topics outside the documented dataset', () => {

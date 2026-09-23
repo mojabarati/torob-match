@@ -42,7 +42,7 @@ const getIntent = () => new URLSearchParams(window.location.search).get('q')?.tr
 
 function Logo({ onClick, large = false, showText = false }: { onClick?: () => void; large?: boolean; showText?: boolean }) {
   const content = <>
-    {large ? <span className="brand-lockup-frame" aria-hidden="true"><img className="brand-lockup brand-lockup-light" src="/brand/torob-match-logo.png" alt="" /><img className="brand-lockup brand-lockup-dark" src="/brand/torob-match-logo-dark.png" alt="" /></span> : <>
+    {large ? <span className="brand-lockup-frame" aria-hidden="true"><img className="brand-lockup" src="/brand/torob-match-logo.png" alt="" /></span> : <>
       <span className="brand-assets" aria-hidden="true"><img className="brand-icon" src="/brand/torob-match-icon.png" alt="" /></span>
       {showText && <span className="brand-text"><strong>ترب مچ</strong><small>دوره‌ای که بهت میاد</small></span>}
     </>}

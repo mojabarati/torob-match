@@ -288,9 +288,6 @@ a { color: inherit; text-decoration: none; }
 .brand-large { margin-bottom: 4px; pointer-events: none; }
 .brand-lockup-frame { width: 180px; height: 200px; display: block; overflow: hidden; position: relative; }
 .brand-lockup { position: absolute; width: 275px; height: 275px; max-width: none; left: -51px; top: -40px; object-fit: contain; }
-.brand-lockup-dark { display: none; }
-[data-theme='dark'] .brand-lockup-light { display: none; }
-[data-theme='dark'] .brand-lockup-dark { display: block; }
 .home-eyebrow { color: var(--color-text-brand); background: var(--color-background-brand-subtle); border: 1px solid color-mix(in srgb, var(--color-border-brand) 22%, transparent); border-radius: 999px; padding: 7px 12px; display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; }
 .home-hero h1 { font-size: clamp(35px, 5vw, 57px); line-height: 1.42; letter-spacing: -1.8px; margin: 16px 0 10px; font-weight: 800; }
 .home-hero h1 em { color: var(--color-text-brand); font-style: normal; }
