@@ -7,7 +7,7 @@ export class HttpIntentEnhancer implements IntentEnhancer {
 
   constructor(
     private readonly endpoint = '/api/intent/enhance',
-    private readonly fetchImpl: FetchLike = fetch,
+    private readonly fetchImpl: FetchLike = globalThis.fetch.bind(globalThis),
   ) {}
 
   async enhance(input: IntentEnhancerInput, { signal }: IntentEnhancerContext): Promise<unknown> {

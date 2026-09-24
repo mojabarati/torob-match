@@ -33,6 +33,25 @@ describe('HTTP intent enhancer adapter', () => {
     expect(body).not.toHaveProperty('deterministicFields')
   })
 
+  it('binds the browser fetch implementation to the global object', async () => {
+    const fetchMock = vi.fn(function (this: unknown) {
+      expect(this).toBe(globalThis)
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve('{"fields":{}}'),
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    try {
+      const enhancer = new HttpIntentEnhancer()
+      await expect(enhancer.enhance(input, { signal: new AbortController().signal })).resolves.toEqual({ fields: {} })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('rejects failed, invalid, and oversized responses', async () => {
     const controller = new AbortController()
     const failed = new HttpIntentEnhancer('/api', vi.fn().mockResolvedValue({ ok: false, status: 503 }) as typeof fetch)
