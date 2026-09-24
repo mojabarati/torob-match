@@ -1,0 +1,114 @@
+[
+  {
+    "id": "explicit-rag-range",
+    "text": "دوره پروژه‌محور RAG با بودجه ۳ تا ۸ میلیون و ۸ ساعت در هفته",
+    "expected": {
+      "supported": true,
+      "signals": ["rag", "project"],
+      "budget": [3000000, 8000000],
+      "hours": [8, 10],
+      "deadline": [12, 20],
+      "project": "must"
+    }
+  },
+  {
+    "id": "complete-sara-constraints",
+    "text": "می‌خواهم ظرف سه ماه RAG قابل ارزیابی را با پایتون بسازم؛ هفته‌ای ۶ تا ۱۰ ساعت وقت دارم و بودجه‌ام ۵ تا ۱۰ میلیون است. مدرک مهم نیست.",
+    "expected": {
+      "supported": true,
+      "signals": ["rag", "evaluation"],
+      "budget": [5000000, 10000000],
+      "hours": [6, 10],
+      "deadline": [12, 20],
+      "evaluation": "must",
+      "certificate": "none"
+    }
+  },
+  {
+    "id": "langchain-mentor",
+    "text": "آموزش LangChain فارسی با منتور، حداکثر بودجه ۱۲ میلیون و مهلت ۲۰ هفته",
+    "expected": {
+      "supported": true,
+      "signals": ["langchain", "mentor"],
+      "budget": [5000000, 12000000],
+      "hours": [6, 10],
+      "deadline": [20, 20],
+      "mentor": "high"
+    }
+  },
+  {
+    "id": "reversed-ranges",
+    "text": "RAG عملی، بودجه ۱۰ تا ۵ میلیون، هفته‌ای ۴ تا ۸ ساعت، تا ۲ ماه",
+    "expected": {
+      "supported": true,
+      "signals": ["rag", "project"],
+      "budget": [5000000, 10000000],
+      "hours": [4, 8],
+      "deadline": [8, 20],
+      "project": "must"
+    }
+  },
+  {
+    "id": "free-langgraph-vector",
+    "text": "فقط دوره رایگان LangGraph با پروژه و پایگاه داده برداری",
+    "expected": {
+      "supported": true,
+      "signals": ["langgraph", "vector_database", "project"],
+      "budget": [0, 0],
+      "hours": [6, 10],
+      "deadline": [12, 20],
+      "project": "must"
+    }
+  },
+  {
+    "id": "explicit-skill-levels",
+    "text": "من Python مبتدی‌ام و RAG بلد نیستم؛ دوره عملی با evaluation می‌خواهم",
+    "expected": {
+      "supported": true,
+      "signals": ["rag", "project", "evaluation"],
+      "budget": [5000000, 10000000],
+      "hours": [6, 10],
+      "deadline": [12, 20],
+      "python": "beginner",
+      "rag": "none",
+      "project": "must",
+      "evaluation": "must"
+    }
+  },
+  {
+    "id": "unsupported-typescript",
+    "text": "دوره TypeScript برای فرانت‌اند، بودجه ۲ میلیون",
+    "expected": {
+      "supported": false,
+      "signals": [],
+      "budget": [2000000, 2000000],
+      "hours": [6, 10],
+      "deadline": [12, 20]
+    }
+  },
+  {
+    "id": "explicit-negation",
+    "text": "RAG می‌خواهم اما پروژه عملی و منتور نمی‌خواهم؛ ارزیابی مهم نیست",
+    "expected": {
+      "supported": true,
+      "signals": ["rag"],
+      "budget": [5000000, 10000000],
+      "hours": [6, 10],
+      "deadline": [12, 20],
+      "project": "none",
+      "mentor": "none",
+      "evaluation": "none"
+    }
+  },
+  {
+    "id": "colloquial-document-search",
+    "text": "برای ساخت سرچ هوشمند روی اسناد شرکت یه دوره می‌خوام، تا ده تومن، هفته‌ای شیش ساعت، سه ماهه",
+    "expected": {
+      "supported": true,
+      "signals": ["rag"],
+      "budget": [5000000, 10000000],
+      "hours": [6, 10],
+      "deadline": [12, 20]
+    }
+  }
+]
