@@ -11,6 +11,18 @@ const SYSTEM_PROMPT = `تو فقط ابهام‌های استخراج معیار
 اگر ابهامی قابل رفع نیست، fields را خالی برگردان. متن قطعی parser را تغییر نده.`
 
 const isRecord = value => typeof value === 'object' && value !== null && !Array.isArray(value)
+const numberRules = {
+  'budget.preferred_max_toman': [0, 30_000_000],
+  'budget.flexible_max_toman': [0, 30_000_000],
+  'time.preferred_hours_per_week': [1, 50],
+  'time.flexible_hours_per_week': [1, 50],
+  'time.preferred_deadline_weeks': [1, 104],
+  'time.flexible_deadline_weeks': [1, 104],
+}
+const skillPaths = new Set(['skills.python', 'skills.rag'])
+const priorityPaths = new Set(['priorities.hands_on_project', 'priorities.mentor_support', 'priorities.certificate', 'priorities.required_topics.evaluation'])
+const levels = new Set(['none', 'beginner', 'intermediate', 'advanced'])
+const priorities = new Set(['none', 'low', 'medium', 'high', 'must'])
 
 export function createIntentProviderConfig(env = process.env) {
   const enabled = env.TOROB_MATCH_INTENT_LLM_ENABLED === 'true'
@@ -42,6 +54,22 @@ export function validateIntentApiInput(value) {
   if (typeof value.normalizedText !== 'string' || value.normalizedText.length > 1_000) return false
   if (!Array.isArray(value.ambiguities) || value.ambiguities.length < 1 || value.ambiguities.length > 20) return false
   return value.ambiguities.every(item => typeof item === 'string' && item.length <= 300)
+}
+
+export function validateIntentProviderOutput(value) {
+  if (!isRecord(value) || !isRecord(value.fields)) return false
+  return Object.entries(value.fields).every(([path, suggestion]) => {
+    if (!isRecord(suggestion) || !('value' in suggestion)) return false
+    if (suggestion.confidence !== undefined && (typeof suggestion.confidence !== 'number' || suggestion.confidence < 0 || suggestion.confidence > 1)) return false
+    if (suggestion.evidence !== undefined && (typeof suggestion.evidence !== 'string' || suggestion.evidence.length > 500)) return false
+    if (Object.hasOwn(numberRules, path)) {
+      const [min, max] = numberRules[path]
+      return typeof suggestion.value === 'number' && Number.isFinite(suggestion.value) && suggestion.value >= min && suggestion.value <= max
+    }
+    if (skillPaths.has(path)) return typeof suggestion.value === 'string' && levels.has(suggestion.value)
+    if (priorityPaths.has(path)) return typeof suggestion.value === 'string' && priorities.has(suggestion.value)
+    return false
+  })
 }
 
 export function buildChatCompletionBody(input, config, schema) {
@@ -100,7 +128,9 @@ export async function requestIntentEnhancementDetailed(input, config, schema, fe
     const envelope = JSON.parse(raw)
     const content = envelope?.choices?.[0]?.message?.content
     if (typeof content !== 'string') throw new Error('INTENT_PROVIDER_MISSING_CONTENT')
-    return { output: parseAssistantJson(content), usage: envelope.usage ?? null }
+    const output = parseAssistantJson(content)
+    if (!validateIntentProviderOutput(output)) throw new Error('INTENT_PROVIDER_INVALID_OUTPUT')
+    return { output, usage: envelope.usage ?? null }
   } finally {
     clearTimeout(timeoutId)
   }

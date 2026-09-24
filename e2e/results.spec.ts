@@ -111,12 +111,15 @@ test('compare two courses side by side', async ({ page }) => {
   await expect(page.getByRole('columnheader')).toHaveCount(3)
 })
 
-test('search is honest outside the dataset and can return to a supported query', async ({ page }) => {
+test('search is honest outside the dataset and keeps header actions aligned', async ({ page, isMobile }) => {
   await page.goto(resultsUrl, { waitUntil: 'domcontentloaded' })
   await page.getByRole('textbox', { name: 'جست‌وجوی دوره' }).fill('دوره TypeScript برای فرانت‌اند')
   await page.getByRole('textbox', { name: 'جست‌وجوی دوره' }).press('Enter')
   await expect(page.getByRole('heading', { level: 1 })).toContainText('دادهٔ کافی نداریم')
   await expect(page.locator('[data-testid^="course-"]')).toHaveCount(0)
+  const themeBounds = await page.getByRole('button', { name: 'فعال‌کردن حالت تیره' }).boundingBox()
+  expect(themeBounds).not.toBeNull()
+  expect(themeBounds!.x).toBeLessThan(isMobile ? 80 : 160)
   await page.getByRole('button', { name: /جست‌وجوی RAG با پایتون/ }).click()
   await expect(page.locator('[data-testid^="course-"]')).toHaveCount(8)
 })

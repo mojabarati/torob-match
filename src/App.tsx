@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import {
   ArrowLeft, ArrowUpLeft, Bookmark, Check, CheckCircle2, ChevronDown, CircleAlert,
-  Clock3, Filter, Heart, Info, Menu, Moon, Search, SlidersHorizontal,
+  Clock3, Filter, Heart, Info, LoaderCircle, Menu, Moon, Search, SlidersHorizontal,
   Sparkles, Sun, X,
 } from 'lucide-react'
 import dataset from '../data/courses.json'
@@ -38,10 +38,45 @@ function usePersistentIds(key: string) {
 
 type Theme = 'light' | 'dark'
 type View = 'home' | 'results'
-type EnhancerStatus = 'idle' | 'loading' | 'enhanced' | 'fallback'
+type EnhancerStatus = 'idle' | 'enhanced' | 'fallback'
+type SearchLoadingMode = 'local' | 'intelligent'
 
 const getView = (): View => window.location.pathname.startsWith('/search') ? 'results' : 'home'
 const getIntent = () => new URLSearchParams(window.location.search).get('q')?.trim() || 'ساخت RAG با پایتون'
+
+function CriteriaSource({ analysis, paths, directEvidence }: {
+  analysis: SearchIntentAnalysis
+  paths?: string[]
+  directEvidence?: string
+}) {
+  const fields = (paths ?? []).map(path => analysis.fields[path]).filter(Boolean)
+  const source = directEvidence
+    ? 'deterministic'
+    : fields.some(field => field.source === 'llm') ? 'llm'
+      : fields.some(field => field.source === 'deterministic') ? 'deterministic' : 'default'
+  const label = source === 'llm' ? 'تکمیل هوشمند' : source === 'deterministic' ? 'از متن شما' : 'مقدار اولیه'
+  const evidence = directEvidence || fields.map(field => field.evidence).filter(Boolean).join('، ')
+  const description = source === 'llm'
+    ? `مدل فقط ابهام این معیار را تکمیل کرده است.${evidence ? ` شاهد: ${evidence}` : ''}`
+    : source === 'deterministic'
+      ? `این معیار مستقیماً از متن شما استخراج شده است.${evidence ? ` شاهد: ${evidence}` : ''}`
+      : 'این معیار در متن مشخص نشده و مقدار اولیهٔ قابل‌ویرایش استفاده شده است.'
+  return <details className={`criteria-source source-${source}`}>
+    <summary>{label}</summary>
+    <p>{description}</p>
+  </details>
+}
+
+const wait = (milliseconds: number) => new Promise(resolve => window.setTimeout(resolve, milliseconds))
+
+function IntentLoading({ intent, mode }: { intent: string; mode: SearchLoadingMode }) {
+  const intelligent = mode === 'intelligent'
+  return <section className="intent-loading" role="status" aria-live="polite" aria-busy="true">
+    <span className="intent-loading-icon" aria-hidden="true"><LoaderCircle size={29} /></span>
+    <div><span className="eyebrow">{intelligent ? 'تحلیل معیارهای جست‌وجو' : 'آماده‌سازی پیشنهادها'}</span><h2>{intelligent ? 'داریم نیازت را دقیق می‌خوانیم…' : 'داریم بهترین نتیجه‌ها را مرتب می‌کنیم…'}</h2><p><bdi dir="rtl">{intent}</bdi></p></div>
+    <div className="intent-loading-progress" aria-hidden="true"><i /><i /><i /></div>
+  </section>
+}
 
 function Logo({ onClick, large = false, showText = false }: { onClick?: () => void; large?: boolean; showText?: boolean }) {
   const content = <>
@@ -238,6 +273,8 @@ export default function App() {
   const [intentAnalysis, setIntentAnalysis] = useState<SearchIntentAnalysis>(() => analyzeSearchIntent(getIntent(), initialQuery))
   const [query, setQuery] = useState<SearchQuery>(() => analyzeSearchIntent(getIntent(), initialQuery).query)
   const [enhancerStatus, setEnhancerStatus] = useState<EnhancerStatus>('idle')
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchLoadingMode, setSearchLoadingMode] = useState<SearchLoadingMode>('local')
   const [search, setSearch] = useState(getIntent)
   const [group, setGroup] = useState<Group | 'all'>('all')
   const [sort, setSort] = useState('recommended')
@@ -268,6 +305,7 @@ export default function App() {
   const goHome = () => {
     searchRequestRef.current += 1
     setEnhancerStatus('idle')
+    setSearchLoading(false)
     window.history.pushState({}, '', '/')
     setView('home')
     scrollToTop()
@@ -275,31 +313,41 @@ export default function App() {
   const applyManualQuery = (nextQuery: SearchQuery) => {
     searchRequestRef.current += 1
     setEnhancerStatus('idle')
+    setSearchLoading(false)
     setQuery(nextQuery)
   }
   const showResults = async (value: string) => {
     const clean = value.trim() || 'ساخت RAG با پایتون'
     const analysis = analyzeSearchIntent(clean, initialQuery)
     const requestId = ++searchRequestRef.current
+    const needsIntelligentAnalysis = analysis.supported && Boolean(intentEnhancer) && analysis.ambiguities.length > 0
     setIntent(clean)
     setSearch(clean)
     setIntentAnalysis(analysis)
     setQuery(analysis.query)
     setEnhancerStatus('idle')
+    setSearchLoadingMode(needsIntelligentAnalysis ? 'intelligent' : 'local')
+    setSearchLoading(true)
     setGroup('all')
     setSort('recommended')
     window.history.pushState({}, '', `/search?q=${encodeURIComponent(clean)}`)
     setView('results')
     scrollToTop()
-    if (!intentEnhancer || analysis.ambiguities.length === 0) return
+    if (!analysis.supported || !intentEnhancer || analysis.ambiguities.length === 0) {
+      await wait(300)
+      if (requestId === searchRequestRef.current) setSearchLoading(false)
+      return
+    }
 
-    setEnhancerStatus('loading')
+    const minimumLoading = wait(600)
     const enhanced = await enhanceSearchIntent(clean, initialQuery, intentEnhancer, { timeoutMs: intentEnhancerTimeout })
+    await minimumLoading
     if (requestId !== searchRequestRef.current) return
     setIntentAnalysis(enhanced)
     setQuery(enhanced.query)
     const applied = Object.values(enhanced.fields).some(field => field.source === 'llm')
     setEnhancerStatus(applied ? 'enhanced' : 'fallback')
+    setSearchLoading(false)
   }
   const toggleTheme = () => setTheme(current => current === 'light' ? 'dark' : 'light')
   useEffect(() => {
@@ -318,6 +366,7 @@ export default function App() {
       setIntentAnalysis(nextAnalysis)
       setQuery(nextAnalysis.query)
       setEnhancerStatus('idle')
+      setSearchLoading(false)
     }
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
@@ -339,14 +388,16 @@ export default function App() {
 
   if (view === 'home') return <HomePage theme={theme} intent={intent} onIntentChange={setIntent} onSearch={showResults} onToggleTheme={toggleTheme} />
 
-  const resultsHeader = <header className="site-header"><div className="header-inner"><Logo onClick={goHome} /><form className="header-search" role="search" onSubmit={event => { event.preventDefault(); showResults(search) }}><button className="header-search-submit" type="submit" aria-label="اجرای جست‌وجو"><Search size={20} /></button><input aria-label="جست‌وجوی دوره" value={search} onChange={event => setSearch(event.target.value)} placeholder="مثلاً RAG پروژه‌محور با بودجه ۳ تا ۸ میلیون" /><kbd>/</kbd></form>{intentAnalysis.supported && <nav className="header-nav" aria-label="ناوبری اصلی"><button onClick={() => setMethodOpen(true)}>روش رتبه‌بندی</button><a href="#results">دوره‌ها</a><span className="saved-label"><Bookmark size={17} /> ذخیره‌شده‌ها <b>{asPersianNumber(savedIds.length)}</b></span></nav>}<ThemeToggle theme={theme} onToggle={toggleTheme} />{intentAnalysis.supported && <button className="icon-button header-menu" aria-label="باز کردن فیلترها" onClick={() => setMobileFilters(true)}><Menu size={22} /></button>}</div></header>
+  const resultsHeader = <header className="site-header"><div className="header-inner"><Logo onClick={goHome} /><form className="header-search" role="search" onSubmit={event => { event.preventDefault(); showResults(search) }}><button className="header-search-submit" type="submit" aria-label="اجرای جست‌وجو"><Search size={20} /></button><input aria-label="جست‌وجوی دوره" value={search} onChange={event => setSearch(event.target.value)} placeholder="مثلاً RAG پروژه‌محور با بودجه ۳ تا ۸ میلیون" /><kbd>/</kbd></form><div className="header-actions">{intentAnalysis.supported && <nav className="header-nav" aria-label="ناوبری اصلی"><button onClick={() => setMethodOpen(true)}>روش رتبه‌بندی</button><a href="#results">دوره‌ها</a><span className="saved-label"><Bookmark size={17} /> ذخیره‌شده‌ها <b>{asPersianNumber(savedIds.length)}</b></span></nav>}<ThemeToggle theme={theme} onToggle={toggleTheme} />{intentAnalysis.supported && <button className="icon-button header-menu" aria-label="باز کردن فیلترها" onClick={() => setMobileFilters(true)}><Menu size={22} /></button>}</div></div></header>
+
+  if (searchLoading) return <div className="app-shell">{resultsHeader}<main className="page-container loading-page"><IntentLoading intent={intent} mode={searchLoadingMode} /></main></div>
 
   if (!intentAnalysis.supported) return <div className="app-shell">{resultsHeader}<UnsupportedState intent={intent} onTrySupported={() => showResults('ساخت RAG با پایتون')} onHome={goHome} /></div>
 
   return <div className="app-shell">
     {resultsHeader}
     <main className="page-container"><div className="breadcrumb">خانه <span>/</span> دوره‌های هوش مصنوعی <span>/</span> نتایج جست‌وجو</div><div className="page-heading"><div><span className="eyebrow"><span className="eyebrow-line" /> انتخاب آگاهانه، نه حدس زدن</span><h1>دوره‌های مناسب برای <em><bdi dir="rtl">{intent}</bdi></em></h1><p>۸ دورهٔ مستند را با بودجه، زمان و مهارت خودت مقایسه کن؛ همراه با دلیل رتبه و داده‌های نامطمئن.</p></div><div className="hero-stat"><span className="stat-icon"><Sparkles size={23} /></span><strong>{asPersianNumber(ranked.summary.visible_courses)}</strong><span>دوره برای بررسی</span></div></div>
-      <div className="layout-grid"><div className="results-column" id="results"><section className="query-summary"><div className="summary-heading"><div><span className="summary-icon"><CheckCircle2 size={18} /></span><strong>برداشت ترب مچ از نیاز شما</strong></div><button className="text-button" onClick={() => setMobileFilters(true)}>ویرایش معیارها <ArrowLeft size={14} /></button></div><div className="summary-chips" tabIndex={0} aria-label="خلاصهٔ معیارها؛ برای پیمایش از کلیدهای جهت‌دار استفاده کنید"><span>جست‌وجو: <b>{intent}</b></span><span>مهارت: <b>Python {levelName[query.skills.python]}</b></span><span>بودجه: <b><bdi dir="rtl">{million(query.budget.preferred_max_toman)} تا {million(query.budget.flexible_max_toman)}</bdi></b></span><span>ساعت هفتگی: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_hours_per_week)} ساعت/هفته تا {asPersianNumber(query.time.flexible_hours_per_week)} ساعت/هفته</bdi></b></span><span>مهلت: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_deadline_weeks)} هفته تا {asPersianNumber(query.time.flexible_deadline_weeks)} هفته</bdi></b></span></div>{enhancerStatus !== 'idle' && <div className={`enhancer-status ${enhancerStatus}`} role="status" aria-live="polite"><Sparkles size={15} />{enhancerStatus === 'loading' ? 'در حال بررسی ابهام‌های متن…' : enhancerStatus === 'enhanced' ? 'معیارهای مبهم با کمک تحلیل هوشمند تکمیل شدند.' : 'تحلیل هوشمند در دسترس نبود؛ معیارهای قطعی استفاده شدند.'}</div>}</section>
+      <div className="layout-grid"><div className="results-column" id="results"><section className="query-summary"><div className="summary-heading"><div><span className="summary-icon"><CheckCircle2 size={18} /></span><strong>برداشت ترب مچ از نیاز شما</strong></div><button className="text-button" onClick={() => setMobileFilters(true)}>ویرایش معیارها <ArrowLeft size={14} /></button></div><div className="summary-chips" aria-label="خلاصهٔ معیارها"><div className="summary-chip">جست‌وجو: <b>{intent}</b><CriteriaSource analysis={intentAnalysis} directEvidence={intent} /></div><div className="summary-chip">مهارت: <b>Python {levelName[query.skills.python]}</b><CriteriaSource analysis={intentAnalysis} paths={['skills.python']} /></div><div className="summary-chip">بودجه: <b><bdi dir="rtl">{million(query.budget.preferred_max_toman)} تا {million(query.budget.flexible_max_toman)}</bdi></b><CriteriaSource analysis={intentAnalysis} paths={['budget.preferred_max_toman', 'budget.flexible_max_toman']} /></div><div className="summary-chip">ساعت هفتگی: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_hours_per_week)} ساعت/هفته تا {asPersianNumber(query.time.flexible_hours_per_week)} ساعت/هفته</bdi></b><CriteriaSource analysis={intentAnalysis} paths={['time.preferred_hours_per_week', 'time.flexible_hours_per_week']} /></div><div className="summary-chip">مهلت: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_deadline_weeks)} هفته تا {asPersianNumber(query.time.flexible_deadline_weeks)} هفته</bdi></b><CriteriaSource analysis={intentAnalysis} paths={['time.preferred_deadline_weeks', 'time.flexible_deadline_weeks']} /></div></div>{enhancerStatus !== 'idle' && <div className={`enhancer-status ${enhancerStatus}`} role="status" aria-live="polite"><Sparkles size={15} />{enhancerStatus === 'enhanced' ? 'معیارهای مبهم با کمک تحلیل هوشمند تکمیل شدند.' : 'تحلیل هوشمند در دسترس نبود؛ معیارهای قطعی استفاده شدند.'}</div>}</section>
         <div className="result-toolbar"><div><span className="toolbar-kicker">نتایج شخصی‌سازی‌شده</span><h2>{asPersianNumber(searchFiltered.length)} نتیجه برای <bdi dir="rtl">{intent}</bdi></h2><p>پیشنهادهای اول با شرایط فعلی سازگارند؛ بقیه با تغییرهای لازم همچنان دیده می‌شوند.</p></div><label className="sort-field"><span>مرتب‌سازی</span><select aria-label="مرتب‌سازی دوره‌ها" value={sort} onChange={event => setSort(event.target.value)}><option value="recommended">پیشنهادی</option><option value="price">کمترین قیمت</option><option value="duration">کوتاه‌ترین مدت</option></select><ChevronDown size={15} /></label></div>
         <div className="tabs" role="tablist" aria-label="گروه نتایج"><button role="tab" aria-selected={group === 'all'} className={group === 'all' ? 'active' : ''} onClick={() => setGroup('all')}>همه <span>{asPersianNumber(searchFiltered.length)}</span></button>{GROUP_ORDER.slice(0, 3).map(key => <button key={key} role="tab" aria-selected={group === key} className={group === key ? 'active' : ''} onClick={() => setGroup(key)}>{groupName[key]} <span>{asPersianNumber(counts[key])}</span></button>)}</div>
         <div className="result-message"><Info size={17} /><span>{evaluationImportant && unverifiedEvaluationCount > 0 ? <><strong>پوشش Evaluation برای {asPersianNumber(unverifiedEvaluationCount)} گزینهٔ مناسب شرایط فعلی اثبات نشده است.</strong> پیش از خرید، سرفصل و پروژهٔ دوره را از برگزارکننده بررسی کنید.</> : <><strong>رتبه‌ها تضمین کیفیت دوره نیستند.</strong> قیمت، ظرفیت و جزئیات نامطمئن را پیش از ثبت‌نام از منبع بررسی کنید.</>}</span><button onClick={() => setMethodOpen(true)}>چرا؟</button></div>

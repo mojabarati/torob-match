@@ -5,6 +5,7 @@ import {
   createIntentProviderConfig,
   requestIntentEnhancement,
   validateIntentApiInput,
+  validateIntentProviderOutput,
 } from './intent-provider.mjs'
 
 const input = {
@@ -40,6 +41,15 @@ test('API input accepts bounded ambiguity context and rejects malformed input', 
   assert.equal(validateIntentApiInput(input), true)
   assert.equal(validateIntentApiInput({ ...input, rawText: '' }), false)
   assert.equal(validateIntentApiInput({ ...input, ambiguities: [] }), false)
+})
+
+test('provider output rejects unknown, out-of-range, and malformed fields', () => {
+  assert.equal(validateIntentProviderOutput({ fields: {} }), true)
+  assert.equal(validateIntentProviderOutput({ fields: { 'budget.preferred_max_toman': { value: 2_500_000, confidence: .9 } } }), true)
+  assert.equal(validateIntentProviderOutput({ fields: { unknown: { value: 1 } } }), false)
+  assert.equal(validateIntentProviderOutput({ fields: { ['__proto__']: { value: 1 } } }), false)
+  assert.equal(validateIntentProviderOutput({ fields: { 'budget.preferred_max_toman': { value: 50_000_000 } } }), false)
+  assert.equal(validateIntentProviderOutput({ fields: { 'skills.python': { value: 'expert' } } }), false)
 })
 
 test('chat request asks for the shared JSON schema without embedding an API key', () => {

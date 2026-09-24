@@ -13,14 +13,15 @@ afterEach(() => {
 })
 
 describe('home and brand experience', () => {
-  it('starts from the Torob Match search homepage and opens results', () => {
+  it('starts from the Torob Match search homepage and opens results', async () => {
     render(<App />)
     expect(screen.getByRole('heading', { name: /دوره‌ای را پیدا کن/ })).toBeInTheDocument()
     expect(screen.getAllByLabelText(/ترب مچ/).length).toBeGreaterThan(0)
     expect(screen.queryByText('۸ دورهٔ مستند')).not.toBeInTheDocument()
     fireEvent.change(screen.getByRole('textbox', { name: 'چه چیزی می‌خواهی یاد بگیری؟' }), { target: { value: 'ساخت RAG با پایتون' } })
     fireEvent.click(screen.getByRole('button', { name: /جست‌وجو/ }))
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('دوره‌های مناسب برای ساخت RAG با پایتون')
+    expect(screen.getByRole('status')).toHaveTextContent('داریم بهترین نتیجه‌ها را مرتب می‌کنیم')
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('دوره‌های مناسب برای ساخت RAG با پایتون')
     expect(screen.getByRole('heading', { level: 2, name: '۸ نتیجه برای ساخت RAG با پایتون' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/search')
   })
@@ -36,30 +37,37 @@ describe('home and brand experience', () => {
     expect(logo.getAttribute('src')).toBe('/brand/torob-match-logo.png')
   })
 
-  it('shows an honest no-data state for topics outside the documented dataset', () => {
-    render(<App />)
+  it('shows an honest no-data state for topics outside the documented dataset', async () => {
+    const { container } = render(<App />)
     const input = screen.getByRole('textbox', { name: 'چه چیزی می‌خواهی یاد بگیری؟' })
     fireEvent.change(input, { target: { value: 'دوره TypeScript برای فرانت‌اند' } })
     fireEvent.submit(input.closest('form')!)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('دادهٔ کافی نداریم')
+    expect(screen.getByRole('status')).toHaveTextContent('داریم بهترین نتیجه‌ها را مرتب می‌کنیم')
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('دادهٔ کافی نداریم')
     expect(screen.getByText(/مجموعهٔ مستند این نسخه روی RAG/)).toBeInTheDocument()
     expect(screen.queryAllByTestId(/^course-/)).toHaveLength(0)
+    const headerActions = container.querySelector('.header-actions')!
+    expect(within(headerActions as HTMLElement).getByRole('button', { name: 'فعال‌کردن حالت تیره' })).toBeInTheDocument()
+    expect(within(headerActions as HTMLElement).queryByRole('navigation')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /جست‌وجوی RAG با پایتون/ }))
-    expect(screen.getAllByTestId(/^course-/)).toHaveLength(8)
+    expect(await screen.findAllByTestId(/^course-/)).toHaveLength(8)
   })
 
   it('uses the optional enhancer only for an ambiguous search and shows its status', async () => {
     vi.stubEnv('VITE_INTENT_ENHANCER_ENABLED', 'true')
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: () => Promise.resolve(JSON.stringify({
-        fields: {
-          'budget.preferred_max_toman': { value: 7_000_000, confidence: .8 },
-          'budget.flexible_max_toman': { value: 12_000_000, confidence: .8 },
-        },
-      })),
-    })
+    let finishRequest = () => {}
+    const fetchMock = vi.fn(() => new Promise(resolve => {
+      finishRequest = () => resolve({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify({
+          fields: {
+            'budget.preferred_max_toman': { value: 7_000_000, confidence: .8, evidence: 'هفت تا دوازده میلیون' },
+            'budget.flexible_max_toman': { value: 12_000_000, confidence: .8, evidence: 'هفت تا دوازده میلیون' },
+          },
+        })),
+      })
+    }))
     vi.stubGlobal('fetch', fetchMock)
     render(<App />)
 
@@ -67,8 +75,13 @@ describe('home and brand experience', () => {
     fireEvent.change(input, { target: { value: 'RAG می‌خواهم ولی بودجه‌ام مشخص نیست' } })
     fireEvent.submit(input.closest('form')!)
 
+    expect(screen.getByRole('status')).toHaveTextContent('داریم نیازت را دقیق می‌خوانیم')
+    finishRequest()
     expect(await screen.findByText('۷ میلیون تا ۱۲ میلیون')).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('معیارهای مبهم با کمک تحلیل هوشمند تکمیل شدند.')
+    const source = screen.getAllByText('تکمیل هوشمند')[0]
+    fireEvent.click(source)
+    expect(screen.getByText(/شاهد: هفت تا دوازده میلیون/)).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })
@@ -122,12 +135,13 @@ describe('results experience', () => {
     expect(screen.getByRole('dialog', { name: 'مقایسهٔ کنارهمی دوره‌ها' })).toBeInTheDocument()
   })
 
-  it('runs a new search from the results header and extracts its constraints', () => {
+  it('runs a new search from the results header and extracts its constraints', async () => {
     render(<App />)
     const input = screen.getByRole('textbox', { name: 'جست‌وجوی دوره' })
     fireEvent.change(input, { target: { value: 'آموزش LangChain فارسی پروژه‌محور با بودجه ۳ تا ۸ میلیون و ۸ ساعت در هفته' } })
     fireEvent.submit(input.closest('form')!)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('آموزش LangChain فارسی پروژه‌محور')
+    expect(screen.getByRole('status')).toHaveTextContent('داریم بهترین نتیجه‌ها را مرتب می‌کنیم')
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('آموزش LangChain فارسی پروژه‌محور')
     expect(screen.getByText('۳ میلیون تا ۸ میلیون')).toBeInTheDocument()
     expect(screen.getByText('۸ ساعت/هفته تا ۱۰ ساعت/هفته')).toBeInTheDocument()
     expect(screen.getAllByTestId(/^course-/)[0]).toHaveAttribute('data-testid', 'course-jahani-langchain-fa')

@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
+  workers: 2,
   timeout: 60_000,
   expect: { timeout: 8_000 },
   use: {
@@ -19,5 +20,9 @@ export default defineConfig({
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: true,
     timeout: 120_000,
+    env: {
+      VITE_INTENT_ENHANCER_ENABLED: 'true',
+      VITE_INTENT_ENHANCER_TIMEOUT_MS: '2000',
+    },
   },
 })
