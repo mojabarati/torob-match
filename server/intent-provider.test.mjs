@@ -32,6 +32,8 @@ test('provider configuration supports any HTTP OpenAI-compatible endpoint', () =
   assert.equal(config.enabled, true)
   assert.equal(config.baseUrl, 'https://api.openai.com/v1')
   assert.equal(config.model, 'example-model')
+  assert.equal(config.maxTokensParameter, 'max_completion_tokens')
+  assert.equal(config.reasoningEffort, 'none')
 })
 
 test('API input accepts bounded ambiguity context and rejects malformed input', () => {
@@ -43,11 +45,15 @@ test('API input accepts bounded ambiguity context and rejects malformed input', 
 test('chat request asks for the shared JSON schema without embedding an API key', () => {
   const config = createIntentProviderConfig({
     TOROB_MATCH_INTENT_LLM_ENABLED: 'true',
+    TOROB_MATCH_INTENT_LLM_BASE_URL: 'https://api.openai.com/v1',
     TOROB_MATCH_INTENT_LLM_MODEL: 'model',
   })
   const body = buildChatCompletionBody(input, config, schema)
   assert.equal(body.response_format.type, 'json_schema')
   assert.deepEqual(body.response_format.json_schema.schema, schema)
+  assert.equal(body.max_completion_tokens, 700)
+  assert.equal(body.reasoning_effort, 'none')
+  assert.equal('max_tokens' in body, false)
   assert.equal(JSON.stringify(body).includes('apiKey'), false)
 })
 

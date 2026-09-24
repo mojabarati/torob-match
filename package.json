@@ -10,6 +10,7 @@
     "serve": "node server/index.mjs",
     "test": "vitest run",
     "test:server": "node --test server/*.test.mjs",
+    "test:intent-llm": "node scripts/evaluate-openai-intent.mjs gpt-6-luna",
     "test:e2e": "playwright test",
     "test:all": "python -m unittest discover -s tests -v && npm run test && npm run test:server && npm run build && npm run test:e2e"
   },

@@ -1,0 +1,55 @@
+{
+  "explicit-rag-range": {
+    "budget.preferred_max_toman": 3000000,
+    "budget.flexible_max_toman": 8000000,
+    "time.preferred_hours_per_week": 8,
+    "priorities.hands_on_project": "must"
+  },
+  "complete-sara-constraints": {
+    "budget.preferred_max_toman": 5000000,
+    "budget.flexible_max_toman": 10000000,
+    "time.preferred_hours_per_week": 6,
+    "time.flexible_hours_per_week": 10,
+    "time.preferred_deadline_weeks": 12,
+    "priorities.required_topics.evaluation": "must",
+    "priorities.certificate": "none"
+  },
+  "langchain-mentor": {
+    "budget.flexible_max_toman": 12000000,
+    "time.preferred_deadline_weeks": 20,
+    "priorities.mentor_support": "high"
+  },
+  "reversed-ranges": {
+    "budget.preferred_max_toman": 5000000,
+    "budget.flexible_max_toman": 10000000,
+    "time.preferred_hours_per_week": 4,
+    "time.flexible_hours_per_week": 8,
+    "time.preferred_deadline_weeks": 8,
+    "priorities.hands_on_project": "must"
+  },
+  "free-langgraph-vector": {
+    "budget.preferred_max_toman": 0,
+    "budget.flexible_max_toman": 0,
+    "priorities.hands_on_project": "must"
+  },
+  "explicit-skill-levels": {
+    "skills.python": "beginner",
+    "skills.rag": "none",
+    "priorities.hands_on_project": "must",
+    "priorities.required_topics.evaluation": "must"
+  },
+  "unsupported-typescript": {
+    "budget.preferred_max_toman": 2000000,
+    "budget.flexible_max_toman": 2000000
+  },
+  "explicit-negation": {
+    "priorities.hands_on_project": "none",
+    "priorities.mentor_support": "none",
+    "priorities.required_topics.evaluation": "none"
+  },
+  "colloquial-document-search": {
+    "budget.flexible_max_toman": 10000000,
+    "time.preferred_hours_per_week": 6,
+    "time.preferred_deadline_weeks": 12
+  }
+}
