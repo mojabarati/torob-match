@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import App from './App'
 
@@ -7,6 +7,9 @@ afterEach(() => {
   localStorage.clear()
   document.documentElement.dataset.theme = 'light'
   window.history.replaceState({}, '', '/')
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('home and brand experience', () => {
@@ -43,6 +46,30 @@ describe('home and brand experience', () => {
     expect(screen.queryAllByTestId(/^course-/)).toHaveLength(0)
     fireEvent.click(screen.getByRole('button', { name: /جست‌وجوی RAG با پایتون/ }))
     expect(screen.getAllByTestId(/^course-/)).toHaveLength(8)
+  })
+
+  it('uses the optional enhancer only for an ambiguous search and shows its status', async () => {
+    vi.stubEnv('VITE_INTENT_ENHANCER_ENABLED', 'true')
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(JSON.stringify({
+        fields: {
+          'budget.preferred_max_toman': { value: 7_000_000, confidence: .8 },
+          'budget.flexible_max_toman': { value: 12_000_000, confidence: .8 },
+        },
+      })),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    render(<App />)
+
+    const input = screen.getByRole('textbox', { name: 'چه چیزی می‌خواهی یاد بگیری؟' })
+    fireEvent.change(input, { target: { value: 'RAG می‌خواهم ولی بودجه‌ام مشخص نیست' } })
+    fireEvent.submit(input.closest('form')!)
+
+    expect(await screen.findByText('۷ میلیون تا ۱۲ میلیون')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('معیارهای مبهم با کمک تحلیل هوشمند تکمیل شدند.')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })
 

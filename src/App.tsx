@@ -7,7 +7,9 @@ import {
 import dataset from '../data/courses.json'
 import sampleQuery from '../data/sample-query.json'
 import { formatAdjustment, formatObservedDate } from './lib/format'
-import { analyzeSearchIntent, intentRelevance } from './lib/intent'
+import { analyzeSearchIntent, intentRelevance, type SearchIntentAnalysis } from './lib/intent'
+import { enhanceSearchIntent } from './lib/intent-enhancer'
+import { createConfiguredIntentEnhancer, getConfiguredIntentEnhancerTimeout } from './lib/http-intent-enhancer'
 import { GROUP_ORDER, rankCourses, type Course, type Group, type Level, type RankedCourse, type SearchQuery } from './lib/ranking'
 
 const courses = dataset.courses as Course[]
@@ -36,6 +38,7 @@ function usePersistentIds(key: string) {
 
 type Theme = 'light' | 'dark'
 type View = 'home' | 'results'
+type EnhancerStatus = 'idle' | 'loading' | 'enhanced' | 'fallback'
 
 const getView = (): View => window.location.pathname.startsWith('/search') ? 'results' : 'home'
 const getIntent = () => new URLSearchParams(window.location.search).get('q')?.trim() || 'ساخت RAG با پایتون'
@@ -222,6 +225,9 @@ function CompareDialog({ ids, rows, onClose, onRemove }: { ids: string[]; rows: 
 
 export default function App() {
   const desktopFiltersRef = useRef<HTMLDivElement>(null)
+  const searchRequestRef = useRef(0)
+  const [intentEnhancer] = useState(createConfiguredIntentEnhancer)
+  const [intentEnhancerTimeout] = useState(getConfiguredIntentEnhancerTimeout)
   const [view, setView] = useState<View>(getView)
   const [intent, setIntent] = useState(getIntent)
   const [theme, setTheme] = useState<Theme>(() => {
@@ -229,7 +235,9 @@ export default function App() {
     if (stored === 'light' || stored === 'dark') return stored
     return typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   })
+  const [intentAnalysis, setIntentAnalysis] = useState<SearchIntentAnalysis>(() => analyzeSearchIntent(getIntent(), initialQuery))
   const [query, setQuery] = useState<SearchQuery>(() => analyzeSearchIntent(getIntent(), initialQuery).query)
+  const [enhancerStatus, setEnhancerStatus] = useState<EnhancerStatus>('idle')
   const [search, setSearch] = useState(getIntent)
   const [group, setGroup] = useState<Group | 'all'>('all')
   const [sort, setSort] = useState('recommended')
@@ -238,7 +246,6 @@ export default function App() {
   const [methodOpen, setMethodOpen] = useState(false)
   const [compareIds, setCompareIds] = useState<string[]>([])
   const [savedIds, setSavedIds] = usePersistentIds('torob-match:saved')
-  const intentAnalysis = useMemo(() => analyzeSearchIntent(intent, initialQuery), [intent])
   const ranked = useMemo(() => rankCourses(courses, query), [query])
   const allRows = useMemo(() => GROUP_ORDER.flatMap(key => ranked.groups[key]), [ranked])
   const searchFiltered = allRows
@@ -259,21 +266,40 @@ export default function App() {
   const toggleCompare = (id: string) => setCompareIds(current => current.includes(id) ? current.filter(item => item !== id) : current.length < 3 ? [...current, id] : current)
   const toggleSaved = (id: string) => setSavedIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id])
   const goHome = () => {
+    searchRequestRef.current += 1
+    setEnhancerStatus('idle')
     window.history.pushState({}, '', '/')
     setView('home')
     scrollToTop()
   }
-  const showResults = (value: string) => {
+  const applyManualQuery = (nextQuery: SearchQuery) => {
+    searchRequestRef.current += 1
+    setEnhancerStatus('idle')
+    setQuery(nextQuery)
+  }
+  const showResults = async (value: string) => {
     const clean = value.trim() || 'ساخت RAG با پایتون'
     const analysis = analyzeSearchIntent(clean, initialQuery)
+    const requestId = ++searchRequestRef.current
     setIntent(clean)
     setSearch(clean)
+    setIntentAnalysis(analysis)
     setQuery(analysis.query)
+    setEnhancerStatus('idle')
     setGroup('all')
     setSort('recommended')
     window.history.pushState({}, '', `/search?q=${encodeURIComponent(clean)}`)
     setView('results')
     scrollToTop()
+    if (!intentEnhancer || analysis.ambiguities.length === 0) return
+
+    setEnhancerStatus('loading')
+    const enhanced = await enhanceSearchIntent(clean, initialQuery, intentEnhancer, { timeoutMs: intentEnhancerTimeout })
+    if (requestId !== searchRequestRef.current) return
+    setIntentAnalysis(enhanced)
+    setQuery(enhanced.query)
+    const applied = Object.values(enhanced.fields).some(field => field.source === 'llm')
+    setEnhancerStatus(applied ? 'enhanced' : 'fallback')
   }
   const toggleTheme = () => setTheme(current => current === 'light' ? 'dark' : 'light')
   useEffect(() => {
@@ -284,10 +310,14 @@ export default function App() {
   useEffect(() => {
     const onPopState = () => {
       const nextIntent = getIntent()
+      const nextAnalysis = analyzeSearchIntent(nextIntent, initialQuery)
+      searchRequestRef.current += 1
       setView(getView())
       setIntent(nextIntent)
       setSearch(nextIntent)
-      setQuery(analyzeSearchIntent(nextIntent, initialQuery).query)
+      setIntentAnalysis(nextAnalysis)
+      setQuery(nextAnalysis.query)
+      setEnhancerStatus('idle')
     }
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
@@ -316,18 +346,18 @@ export default function App() {
   return <div className="app-shell">
     {resultsHeader}
     <main className="page-container"><div className="breadcrumb">خانه <span>/</span> دوره‌های هوش مصنوعی <span>/</span> نتایج جست‌وجو</div><div className="page-heading"><div><span className="eyebrow"><span className="eyebrow-line" /> انتخاب آگاهانه، نه حدس زدن</span><h1>دوره‌های مناسب برای <em><bdi dir="rtl">{intent}</bdi></em></h1><p>۸ دورهٔ مستند را با بودجه، زمان و مهارت خودت مقایسه کن؛ همراه با دلیل رتبه و داده‌های نامطمئن.</p></div><div className="hero-stat"><span className="stat-icon"><Sparkles size={23} /></span><strong>{asPersianNumber(ranked.summary.visible_courses)}</strong><span>دوره برای بررسی</span></div></div>
-      <div className="layout-grid"><div className="results-column" id="results"><section className="query-summary"><div className="summary-heading"><div><span className="summary-icon"><CheckCircle2 size={18} /></span><strong>برداشت ترب مچ از نیاز شما</strong></div><button className="text-button" onClick={() => setMobileFilters(true)}>ویرایش معیارها <ArrowLeft size={14} /></button></div><div className="summary-chips" tabIndex={0} aria-label="خلاصهٔ معیارها؛ برای پیمایش از کلیدهای جهت‌دار استفاده کنید"><span>جست‌وجو: <b>{intent}</b></span><span>مهارت: <b>Python {levelName[query.skills.python]}</b></span><span>بودجه: <b><bdi dir="rtl">{million(query.budget.preferred_max_toman)} تا {million(query.budget.flexible_max_toman)}</bdi></b></span><span>ساعت هفتگی: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_hours_per_week)} ساعت/هفته تا {asPersianNumber(query.time.flexible_hours_per_week)} ساعت/هفته</bdi></b></span><span>مهلت: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_deadline_weeks)} هفته تا {asPersianNumber(query.time.flexible_deadline_weeks)} هفته</bdi></b></span></div></section>
+      <div className="layout-grid"><div className="results-column" id="results"><section className="query-summary"><div className="summary-heading"><div><span className="summary-icon"><CheckCircle2 size={18} /></span><strong>برداشت ترب مچ از نیاز شما</strong></div><button className="text-button" onClick={() => setMobileFilters(true)}>ویرایش معیارها <ArrowLeft size={14} /></button></div><div className="summary-chips" tabIndex={0} aria-label="خلاصهٔ معیارها؛ برای پیمایش از کلیدهای جهت‌دار استفاده کنید"><span>جست‌وجو: <b>{intent}</b></span><span>مهارت: <b>Python {levelName[query.skills.python]}</b></span><span>بودجه: <b><bdi dir="rtl">{million(query.budget.preferred_max_toman)} تا {million(query.budget.flexible_max_toman)}</bdi></b></span><span>ساعت هفتگی: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_hours_per_week)} ساعت/هفته تا {asPersianNumber(query.time.flexible_hours_per_week)} ساعت/هفته</bdi></b></span><span>مهلت: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_deadline_weeks)} هفته تا {asPersianNumber(query.time.flexible_deadline_weeks)} هفته</bdi></b></span></div>{enhancerStatus !== 'idle' && <div className={`enhancer-status ${enhancerStatus}`} role="status" aria-live="polite"><Sparkles size={15} />{enhancerStatus === 'loading' ? 'در حال بررسی ابهام‌های متن…' : enhancerStatus === 'enhanced' ? 'معیارهای مبهم با کمک تحلیل هوشمند تکمیل شدند.' : 'تحلیل هوشمند در دسترس نبود؛ معیارهای قطعی استفاده شدند.'}</div>}</section>
         <div className="result-toolbar"><div><span className="toolbar-kicker">نتایج شخصی‌سازی‌شده</span><h2>{asPersianNumber(searchFiltered.length)} نتیجه برای <bdi dir="rtl">{intent}</bdi></h2><p>پیشنهادهای اول با شرایط فعلی سازگارند؛ بقیه با تغییرهای لازم همچنان دیده می‌شوند.</p></div><label className="sort-field"><span>مرتب‌سازی</span><select aria-label="مرتب‌سازی دوره‌ها" value={sort} onChange={event => setSort(event.target.value)}><option value="recommended">پیشنهادی</option><option value="price">کمترین قیمت</option><option value="duration">کوتاه‌ترین مدت</option></select><ChevronDown size={15} /></label></div>
         <div className="tabs" role="tablist" aria-label="گروه نتایج"><button role="tab" aria-selected={group === 'all'} className={group === 'all' ? 'active' : ''} onClick={() => setGroup('all')}>همه <span>{asPersianNumber(searchFiltered.length)}</span></button>{GROUP_ORDER.slice(0, 3).map(key => <button key={key} role="tab" aria-selected={group === key} className={group === key ? 'active' : ''} onClick={() => setGroup(key)}>{groupName[key]} <span>{asPersianNumber(counts[key])}</span></button>)}</div>
         <div className="result-message"><Info size={17} /><span>{evaluationImportant && unverifiedEvaluationCount > 0 ? <><strong>پوشش Evaluation برای {asPersianNumber(unverifiedEvaluationCount)} گزینهٔ مناسب شرایط فعلی اثبات نشده است.</strong> پیش از خرید، سرفصل و پروژهٔ دوره را از برگزارکننده بررسی کنید.</> : <><strong>رتبه‌ها تضمین کیفیت دوره نیستند.</strong> قیمت، ظرفیت و جزئیات نامطمئن را پیش از ثبت‌نام از منبع بررسی کنید.</>}</span><button onClick={() => setMethodOpen(true)}>چرا؟</button></div>
         <div className="cards-heading"><div><span className="eyebrow">با توجه به شرایط شما</span><h2>{group === 'all' ? 'پیشنهادهای اول' : groupName[group]}</h2></div><span>{asPersianNumber(shown.length)} گزینه</span></div>
         <div className="cards-list">{shown.length ? shown.map((row, index) => <CourseCard key={row.course_id} row={row} course={courseById.get(row.course_id)!} index={index + 1} selected={compareIds.includes(row.course_id)} saved={savedIds.includes(row.course_id)} onCompare={() => toggleCompare(row.course_id)} onSave={() => toggleSaved(row.course_id)} featured={featuredIds.has(row.course_id) && sort === 'recommended'} />) : <div className="empty-state"><Search size={27} /><h3>در این گروه دوره‌ای نیست</h3><p>همهٔ دوره‌ها را ببین یا معیارها را تغییر بده.</p><button className="outline-button" onClick={() => setGroup('all')}>نمایش همهٔ دوره‌ها</button></div>}</div>
         <p className="data-disclaimer"><Info size={16} /> اطلاعات این نسخه از صفحات عمومی برگزارکنندگان در {formatObservedDate(dataset.dataset.observed_at)} ثبت شده و قیمت یا ظرفیت زنده نیست.</p>
-      </div><div className="desktop-filters" ref={desktopFiltersRef}><FilterPanel query={query} onChange={setQuery} onReset={() => setQuery(intentAnalysis.query)} onShow={() => document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' })} count={ranked.summary.visible_courses} /></div></div>
+      </div><div className="desktop-filters" ref={desktopFiltersRef}><FilterPanel query={query} onChange={applyManualQuery} onReset={() => applyManualQuery(intentAnalysis.query)} onShow={() => document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' })} count={ranked.summary.visible_courses} /></div></div>
     </main>
     {compareIds.length > 0 && <div className="compare-tray" role="region" aria-label="نوار مقایسه"><div className="compare-inner"><div className="tray-count"><div className="tray-icon"><SlidersHorizontal size={20} /></div><div><strong>مقایسهٔ {asPersianNumber(compareIds.length)} دوره</strong><span>تا ۳ دوره را کنار هم ببین</span></div></div><div className="tray-items">{compareIds.map(id => <button key={id} onClick={() => toggleCompare(id)} title="حذف از مقایسه">{courseById.get(id)?.title_fa}<X size={14} /></button>)}</div><button className="primary-button" disabled={compareIds.length < 2} onClick={() => setCompareOpen(true)}>مقایسه کنار هم <ArrowLeft size={17} /></button></div></div>}
     <div className="mobile-dock"><button onClick={() => setMobileFilters(true)}><Filter size={19} /> فیلترها</button><button disabled={compareIds.length < 2} onClick={() => setCompareOpen(true)}><SlidersHorizontal size={19} /> مقایسه {compareIds.length ? asPersianNumber(compareIds.length) : ''}</button></div>
-    {mobileFilters && <div className="drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setMobileFilters(false) }}><div className="mobile-drawer" role="dialog" aria-modal="true" aria-label="تنظیم فیلترها"><FilterPanel query={query} onChange={setQuery} onReset={() => setQuery(intentAnalysis.query)} onClose={() => setMobileFilters(false)} count={ranked.summary.visible_courses} /></div></div>}
+    {mobileFilters && <div className="drawer-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setMobileFilters(false) }}><div className="mobile-drawer" role="dialog" aria-modal="true" aria-label="تنظیم فیلترها"><FilterPanel query={query} onChange={applyManualQuery} onReset={() => applyManualQuery(intentAnalysis.query)} onClose={() => setMobileFilters(false)} count={ranked.summary.visible_courses} /></div></div>}
     {compareOpen && <CompareDialog ids={compareIds} rows={allRows} onClose={() => setCompareOpen(false)} onRemove={toggleCompare} />}
     {methodOpen && <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setMethodOpen(false) }}><div className="method-modal" role="dialog" aria-modal="true" aria-labelledby="method-title"><div className="modal-heading"><div><span className="eyebrow">شفافیت انتخاب</span><h2 id="method-title">دوره‌ها چطور رتبه می‌گیرند؟</h2></div><button className="icon-button" aria-label="بستن توضیح رتبه‌بندی" onClick={() => setMethodOpen(false)}><X size={21} /></button></div><p>امتیاز از تناسب موضوع، پروژه و Evaluation، مهارت، زمان، بودجه، پشتیبانی و کیفیت داده ساخته می‌شود. سپس وضعیت هر دوره نسبت به معیارهای مطلوب و منعطف شما تعیین می‌شود.</p><div className="weight-list">{[['تناسب موضوع',35],['پروژه و Evaluation',20],['مهارت',15],['زمان',10],['بودجه',10],['پشتیبانی',5],['اطمینان داده',5]].map(([label, weight]) => <div key={label}><span>{label}</span><strong>{asPersianNumber(Number(weight))}٪</strong><i style={{ width: `${weight}%` }} /></div>)}</div><div className="method-note"><CircleAlert size={19} /> مجهول بودن یک ویژگی به معنای نبود آن نیست. دوره حذف نمی‌شود؛ کنار همان ویژگی هشدار می‌بینید.</div></div></div>}
   </div>

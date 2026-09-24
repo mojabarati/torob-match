@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://torob-match.local/schemas/intent-enhancer-output.json",
+  "title": "Torob Match intent enhancer output",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fields"],
+  "$defs": {
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "evidence": { "type": "string", "maxLength": 200 },
+    "moneySuggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "number", "minimum": 0, "maximum": 30000000 },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "hoursSuggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "number", "minimum": 1, "maximum": 50 },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "deadlineSuggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "number", "minimum": 1, "maximum": 104 },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "levelSuggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "string", "enum": ["none", "beginner", "intermediate", "advanced"] },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    },
+    "prioritySuggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "string", "enum": ["none", "low", "medium", "high", "must"] },
+        "confidence": { "$ref": "#/$defs/confidence" },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    }
+  },
+  "properties": {
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "budget.preferred_max_toman": { "$ref": "#/$defs/moneySuggestion" },
+        "budget.flexible_max_toman": { "$ref": "#/$defs/moneySuggestion" },
+        "time.preferred_hours_per_week": { "$ref": "#/$defs/hoursSuggestion" },
+        "time.flexible_hours_per_week": { "$ref": "#/$defs/hoursSuggestion" },
+        "time.preferred_deadline_weeks": { "$ref": "#/$defs/deadlineSuggestion" },
+        "time.flexible_deadline_weeks": { "$ref": "#/$defs/deadlineSuggestion" },
+        "skills.python": { "$ref": "#/$defs/levelSuggestion" },
+        "skills.rag": { "$ref": "#/$defs/levelSuggestion" },
+        "priorities.hands_on_project": { "$ref": "#/$defs/prioritySuggestion" },
+        "priorities.mentor_support": { "$ref": "#/$defs/prioritySuggestion" },
+        "priorities.certificate": { "$ref": "#/$defs/prioritySuggestion" },
+        "priorities.required_topics.evaluation": { "$ref": "#/$defs/prioritySuggestion" }
+      }
+    }
+  }
+}

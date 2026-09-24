@@ -3,6 +3,9 @@ dist/
 playwright-report/
 test-results/
 coverage/
+.env
+.env.*
+!.env.example
 *.tsbuildinfo
 __pycache__/
 *.pyc

@@ -9,6 +9,7 @@ import {
   type Priority,
   type SearchQuery,
 } from './ranking'
+import enhancerOutputSchema from '../../data/intent-enhancer-schema.json'
 
 export type EnhancerFieldPath =
   | 'budget.preferred_max_toman'
@@ -78,43 +79,7 @@ const FIELD_PATHS = new Set<EnhancerFieldPath>([
 
 const LEVELS = new Set<Level>(['none', 'beginner', 'intermediate', 'advanced'])
 const PRIORITIES = new Set<Priority>(['none', 'low', 'medium', 'high', 'must'])
-
-const suggestionSchema = (value: Record<string, unknown>) => ({
-  type: 'object',
-  additionalProperties: false,
-  required: ['value'],
-  properties: {
-    value,
-    confidence: { type: 'number', minimum: 0, maximum: 1 },
-    evidence: { type: 'string', maxLength: 200 },
-  },
-})
-
-export const INTENT_ENHANCER_OUTPUT_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['fields'],
-  properties: {
-    fields: {
-      type: 'object',
-      additionalProperties: false,
-      properties: {
-        'budget.preferred_max_toman': suggestionSchema({ type: 'number', minimum: 0, maximum: 30_000_000 }),
-        'budget.flexible_max_toman': suggestionSchema({ type: 'number', minimum: 0, maximum: 30_000_000 }),
-        'time.preferred_hours_per_week': suggestionSchema({ type: 'number', minimum: 1, maximum: 50 }),
-        'time.flexible_hours_per_week': suggestionSchema({ type: 'number', minimum: 1, maximum: 50 }),
-        'time.preferred_deadline_weeks': suggestionSchema({ type: 'number', minimum: 1, maximum: 104 }),
-        'time.flexible_deadline_weeks': suggestionSchema({ type: 'number', minimum: 1, maximum: 104 }),
-        'skills.python': suggestionSchema({ type: 'string', enum: [...LEVELS] }),
-        'skills.rag': suggestionSchema({ type: 'string', enum: [...LEVELS] }),
-        'priorities.hands_on_project': suggestionSchema({ type: 'string', enum: [...PRIORITIES] }),
-        'priorities.mentor_support': suggestionSchema({ type: 'string', enum: [...PRIORITIES] }),
-        'priorities.certificate': suggestionSchema({ type: 'string', enum: [...PRIORITIES] }),
-        'priorities.required_topics.evaluation': suggestionSchema({ type: 'string', enum: [...PRIORITIES] }),
-      },
-    },
-  },
-} as const
+export const INTENT_ENHANCER_OUTPUT_SCHEMA = enhancerOutputSchema
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   typeof value === 'object' && value !== null && !Array.isArray(value)
