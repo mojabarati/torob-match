@@ -9,3 +9,4 @@ coverage/
 *.tsbuildinfo
 __pycache__/
 *.pyc
+docs/06-demo-script.md
