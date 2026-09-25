@@ -2,10 +2,20 @@ import { expect, test } from '@playwright/test'
 
 const ambiguousSearch = 'برای RAG دوره می‌خواهم و بودجه‌ام دو و نیم میلیون تومان است'
 
-const submitHomeSearch = async (page: import('@playwright/test').Page, value: string) => {
+const submitHomeSearch = async (
+  page: import('@playwright/test').Page,
+  value: string,
+  expectedLoadingText?: string,
+) => {
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   await page.getByRole('textbox', { name: 'چه چیزی می‌خواهی یاد بگیری؟' }).fill(value)
-  await page.getByRole('button', { name: 'جست‌وجو', exact: true }).click()
+  const loadingAppeared = expectedLoadingText
+    ? page.getByRole('status').filter({ hasText: expectedLoadingText }).waitFor({ state: 'visible' })
+    : Promise.resolve()
+  await Promise.all([
+    loadingAppeared,
+    page.getByRole('button', { name: 'جست‌وجو', exact: true }).click(),
+  ])
   await expect(page).toHaveURL(/\/search\?q=/)
 }
 
@@ -22,8 +32,7 @@ test('shows an accessible loading state and the source of an AI-completed criter
     })
   })
 
-  await submitHomeSearch(page, ambiguousSearch)
-  await expect(page.getByRole('status')).toContainText('داریم نیازت را دقیق می‌خوانیم')
+  await submitHomeSearch(page, ambiguousSearch, 'داریم نیازت را دقیق می‌خوانیم')
   await expect(page.getByRole('status')).toContainText('معیارهای مبهم با کمک تحلیل هوشمند تکمیل شدند')
   await expect(page.getByText('۲٫۵ میلیون تا ۲٫۵ میلیون')).toBeVisible()
   const source = page.locator('.criteria-source.source-llm').first()
@@ -38,8 +47,7 @@ test('falls back to deterministic results after provider timeout', async ({ page
     await route.fulfill({ status: 200, contentType: 'application/json', body: '{"fields":{}}' }).catch(() => {})
   })
 
-  await submitHomeSearch(page, 'RAG می‌خواهم ولی بودجه‌ام مشخص نیست')
-  await expect(page.getByRole('status')).toContainText('داریم نیازت را دقیق می‌خوانیم')
+  await submitHomeSearch(page, 'RAG می‌خواهم ولی بودجه‌ام مشخص نیست', 'داریم نیازت را دقیق می‌خوانیم')
   await expect(page.getByRole('status')).toContainText('تحلیل هوشمند در دسترس نبود؛ معیارهای قطعی استفاده شدند')
   await expect(page.locator('[data-testid^="course-"]')).toHaveCount(8)
 })
@@ -57,8 +65,7 @@ test('does not call the provider for a fully deterministic search', async ({ pag
     providerCalls += 1
     return route.fulfill({ status: 200, contentType: 'application/json', body: '{"fields":{}}' })
   })
-  await submitHomeSearch(page, 'RAG با بودجه ۳ تا ۸ میلیون و هفته‌ای ۶ ساعت')
-  await expect(page.getByRole('status')).toContainText('داریم بهترین نتیجه‌ها را مرتب می‌کنیم')
+  await submitHomeSearch(page, 'RAG با بودجه ۳ تا ۸ میلیون و هفته‌ای ۶ ساعت', 'داریم بهترین نتیجه‌ها را مرتب می‌کنیم')
   await expect(page.locator('[data-testid^="course-"]')).toHaveCount(8)
   await page.waitForTimeout(250)
   expect(providerCalls).toBe(0)
