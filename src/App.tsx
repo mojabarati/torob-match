@@ -42,7 +42,7 @@ type EnhancerStatus = 'idle' | 'enhanced' | 'fallback'
 type SearchLoadingMode = 'local' | 'intelligent'
 
 const getView = (): View => window.location.pathname.startsWith('/search') ? 'results' : 'home'
-const getIntent = () => new URLSearchParams(window.location.search).get('q')?.trim() || 'ساخت RAG با پایتون'
+const getIntent = () => new URLSearchParams(window.location.search).get('q')?.trim() || (getView() === 'results' ? 'ساخت RAG با پایتون' : '')
 
 function CriteriaSource({ analysis, paths, directEvidence }: {
   analysis: SearchIntentAnalysis
@@ -119,7 +119,7 @@ function HomePage({ theme, intent, onIntentChange, onSearch, onToggleTheme }: {
         <p>هدفت را بنویس؛ ترب مچ گزینه‌ها را با بودجه، زمان، مهارت و کیفیت داده مقایسه می‌کند و دلیل هر پیشنهاد را شفاف نشان می‌دهد.</p>
         <form className="home-search" onSubmit={submit} role="search">
           <Search size={23} aria-hidden="true" />
-          <input autoFocus aria-label="چه چیزی می‌خواهی یاد بگیری؟" value={intent} onChange={event => onIntentChange(event.target.value)} placeholder="مثلاً می‌خواهم RAG را با پایتون به محصول اضافه کنم" />
+          <input autoFocus aria-label="چه چیزی می‌خواهی یاد بگیری؟" value={intent} onChange={event => onIntentChange(event.target.value)} placeholder="ساخت RAG با پایتون" />
           <button type="submit">جست‌وجو <ArrowLeft size={19} /></button>
         </form>
         <div className="home-suggestions"><span>جست‌وجوهای پیشنهادی:</span>{suggestions.map(item => <button key={item} type="button" onClick={() => { onIntentChange(item); onSearch(item) }}>{item}</button>)}</div>
@@ -255,7 +255,7 @@ function CourseCard({ row, course, index, selected, saved, onCompare, onSave, fe
 
 function CompareDialog({ ids, rows, onClose, onRemove }: { ids: string[]; rows: RankedCourse[]; onClose: () => void; onRemove: (id: string) => void }) {
   const chosen = ids.map(id => ({ course: courseById.get(id)!, row: rows.find(row => row.course_id === id)! })).filter(item => item.course && item.row)
-  return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div className="compare-modal" role="dialog" aria-modal="true" aria-labelledby="compare-title"><div className="modal-heading"><div><span className="eyebrow">تصمیم با اطلاعات روشن‌تر</span><h2 id="compare-title">مقایسهٔ کنارهمی دوره‌ها</h2></div><button className="icon-button" aria-label="بستن مقایسه" onClick={onClose}><X size={21} /></button></div><div className="compare-scroll"><table><thead><tr><th scope="col">معیار</th>{chosen.map(({ course }) => <th scope="col" key={course.id}><span>{course.title_fa}</span><button className="table-remove" aria-label={`حذف ${course.title_fa} از مقایسه`} onClick={() => onRemove(course.id)}><X size={15} /></button></th>)}</tr></thead><tbody><tr><th scope="row">امتیاز تناسب</th>{chosen.map(({ course, row }) => <td key={course.id}><strong className="table-score">{asPersianNumber(row.score)} / ۱۰۰</strong></td>)}</tr><tr><th scope="row">وضعیت</th>{chosen.map(({ course, row }) => <td key={course.id}>{groupName[row.group]}</td>)}</tr><tr><th scope="row">شهریه</th>{chosen.map(({ course }) => <td key={course.id}>{formatPrice(course.commercial.price_toman)}</td>)}</tr><tr><th scope="row">مدت مرتبط</th>{chosen.map(({ course, row }) => <td key={course.id}>{row.workload.hours === null ? 'نامشخص' : `${asPersianNumber(row.workload.hours)} ساعت`}</td>)}</tr><tr><th scope="row">پروژهٔ عملی</th>{chosen.map(({ course }) => <td key={course.id}>{course.learning_experience.hands_on_project === true ? 'تأییدشده' : 'نامشخص'}</td>)}</tr><tr><th scope="row">Evaluation</th>{chosen.map(({ course }) => <td key={course.id}>{course.rag.topics.evaluation === true ? 'تأییدشده' : 'در منبع عمومی اثبات نشده'}</td>)}</tr><tr><th scope="row">تغییر لازم</th>{chosen.map(({ course, row }) => <td key={course.id}>{row.adjustments[0] ? formatAdjustment(row.adjustments[0]) : 'نیاز به تغییر ندارد'}</td>)}</tr></tbody></table></div><p className="modal-note"><Info size={16} /> قیمت و جزئیات از صفحات عمومی در تاریخ ثبت داده استخراج شده‌اند؛ پیش از ثبت‌نام از برگزارکننده بررسی کنید.</p></div></div>
+  return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}><div className="compare-modal" role="dialog" aria-modal="true" aria-labelledby="compare-title"><div className="modal-heading"><div><span className="eyebrow">تصمیم با اطلاعات روشن‌تر</span><h2 id="compare-title">مقایسهٔ کنارهمی دوره‌ها</h2></div><button className="icon-button" aria-label="بستن مقایسه" onClick={onClose}><X size={21} /></button></div><div className="compare-scroll"><table><thead><tr><th scope="col">معیار</th>{chosen.map(({ course }) => <th scope="col" key={course.id}><span>{course.title_fa}</span><button className="table-remove" aria-label={`حذف ${course.title_fa} از مقایسه`} onClick={() => onRemove(course.id)}><X size={15} /></button></th>)}</tr></thead><tbody><tr><th scope="row">امتیاز تناسب</th>{chosen.map(({ course, row }) => <td key={course.id}><strong className="table-score"><bdi dir="ltr">{asPersianNumber(row.score)} / ۱۰۰</bdi></strong></td>)}</tr><tr><th scope="row">وضعیت</th>{chosen.map(({ course, row }) => <td key={course.id}>{groupName[row.group]}</td>)}</tr><tr><th scope="row">شهریه</th>{chosen.map(({ course }) => <td key={course.id}>{formatPrice(course.commercial.price_toman)}</td>)}</tr><tr><th scope="row">مدت مرتبط</th>{chosen.map(({ course, row }) => <td key={course.id}>{row.workload.hours === null ? 'نامشخص' : `${asPersianNumber(row.workload.hours)} ساعت`}</td>)}</tr><tr><th scope="row">پروژهٔ عملی</th>{chosen.map(({ course }) => <td key={course.id}>{course.learning_experience.hands_on_project === true ? 'تأییدشده' : 'نامشخص'}</td>)}</tr><tr><th scope="row">Evaluation</th>{chosen.map(({ course }) => <td key={course.id}>{course.rag.topics.evaluation === true ? 'تأییدشده' : 'در منبع عمومی اثبات نشده'}</td>)}</tr><tr><th scope="row">تغییر لازم</th>{chosen.map(({ course, row }) => <td key={course.id}>{row.adjustments[0] ? formatAdjustment(row.adjustments[0]) : 'نیاز به تغییر ندارد'}</td>)}</tr></tbody></table></div><p className="modal-note"><Info size={16} /> قیمت و جزئیات از صفحات عمومی در تاریخ ثبت داده استخراج شده‌اند؛ پیش از ثبت‌نام از برگزارکننده بررسی کنید.</p></div></div>
 }
 
 export default function App() {
@@ -302,10 +302,26 @@ export default function App() {
   const unverifiedEvaluationCount = topCandidates.filter(row => courseById.get(row.course_id)?.rag.topics.evaluation !== true).length
   const toggleCompare = (id: string) => setCompareIds(current => current.includes(id) ? current.filter(item => item !== id) : current.length < 3 ? [...current, id] : current)
   const toggleSaved = (id: string) => setSavedIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id])
-  const goHome = () => {
+  const resetSearchSession = () => {
+    const emptyAnalysis = analyzeSearchIntent('', initialQuery)
     searchRequestRef.current += 1
+    setIntent('')
+    setSearch('')
+    setIntentAnalysis(emptyAnalysis)
+    setQuery(emptyAnalysis.query)
     setEnhancerStatus('idle')
+    setSearchLoadingMode('local')
     setSearchLoading(false)
+    setGroup('all')
+    setSort('recommended')
+    setMobileFilters(false)
+    setCompareOpen(false)
+    setMethodOpen(false)
+    setCompareIds([])
+    setSavedIds([])
+  }
+  const goHome = () => {
+    resetSearchSession()
     window.history.pushState({}, '', '/')
     setView('home')
     scrollToTop()
@@ -357,10 +373,17 @@ export default function App() {
   }, [theme])
   useEffect(() => {
     const onPopState = () => {
+      const nextView = getView()
+      if (nextView === 'home') {
+        resetSearchSession()
+        setView('home')
+        scrollToTop()
+        return
+      }
       const nextIntent = getIntent()
       const nextAnalysis = analyzeSearchIntent(nextIntent, initialQuery)
       searchRequestRef.current += 1
-      setView(getView())
+      setView(nextView)
       setIntent(nextIntent)
       setSearch(nextIntent)
       setIntentAnalysis(nextAnalysis)
@@ -396,9 +419,9 @@ export default function App() {
 
   return <div className="app-shell">
     {resultsHeader}
-    <main className="page-container"><div className="breadcrumb">خانه <span>/</span> دوره‌های هوش مصنوعی <span>/</span> نتایج جست‌وجو</div><div className="page-heading"><div><span className="eyebrow"><span className="eyebrow-line" /> انتخاب آگاهانه، نه حدس زدن</span><h1>دوره‌های مناسب برای <em><bdi dir="rtl">{intent}</bdi></em></h1><p>۸ دورهٔ مستند را با بودجه، زمان و مهارت خودت مقایسه کن؛ همراه با دلیل رتبه و داده‌های نامطمئن.</p></div><div className="hero-stat"><span className="stat-icon"><Sparkles size={23} /></span><strong>{asPersianNumber(ranked.summary.visible_courses)}</strong><span>دوره برای بررسی</span></div></div>
+    <main className="page-container"><div className="breadcrumb">خانه <span>/</span> دوره‌های هوش مصنوعی <span>/</span> نتایج جست‌وجو</div><div className="page-heading"><div><span className="eyebrow"><span className="eyebrow-line" /> انتخاب آگاهانه، نه حدس زدن</span><p>۸ دورهٔ مستند را با بودجه، زمان و مهارت خودت مقایسه کن؛ همراه با دلیل رتبه و داده‌های نامطمئن.</p></div><div className="hero-stat"><span className="stat-icon"><Sparkles size={23} /></span><strong>{asPersianNumber(ranked.summary.visible_courses)}</strong><span>دوره برای بررسی</span></div></div>
       <div className="layout-grid"><div className="results-column" id="results"><section className="query-summary"><div className="summary-heading"><div><span className="summary-icon"><CheckCircle2 size={18} /></span><strong>برداشت ترب مچ از نیاز شما</strong></div><button className="text-button" onClick={() => setMobileFilters(true)}>ویرایش معیارها <ArrowLeft size={14} /></button></div><div className="summary-chips" aria-label="خلاصهٔ معیارها"><div className="summary-chip">جست‌وجو: <b>{intent}</b><CriteriaSource analysis={intentAnalysis} directEvidence={intent} /></div><div className="summary-chip">مهارت: <b>Python {levelName[query.skills.python]}</b><CriteriaSource analysis={intentAnalysis} paths={['skills.python']} /></div><div className="summary-chip">بودجه: <b><bdi dir="rtl">{million(query.budget.preferred_max_toman)} تا {million(query.budget.flexible_max_toman)}</bdi></b><CriteriaSource analysis={intentAnalysis} paths={['budget.preferred_max_toman', 'budget.flexible_max_toman']} /></div><div className="summary-chip">ساعت هفتگی: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_hours_per_week)} ساعت/هفته تا {asPersianNumber(query.time.flexible_hours_per_week)} ساعت/هفته</bdi></b><CriteriaSource analysis={intentAnalysis} paths={['time.preferred_hours_per_week', 'time.flexible_hours_per_week']} /></div><div className="summary-chip">مهلت: <b><bdi dir="rtl">{asPersianNumber(query.time.preferred_deadline_weeks)} هفته تا {asPersianNumber(query.time.flexible_deadline_weeks)} هفته</bdi></b><CriteriaSource analysis={intentAnalysis} paths={['time.preferred_deadline_weeks', 'time.flexible_deadline_weeks']} /></div></div>{enhancerStatus !== 'idle' && <div className={`enhancer-status ${enhancerStatus}`} role="status" aria-live="polite"><Sparkles size={15} />{enhancerStatus === 'enhanced' ? 'معیارهای مبهم با کمک تحلیل هوشمند تکمیل شدند.' : 'تحلیل هوشمند در دسترس نبود؛ معیارهای قطعی استفاده شدند.'}</div>}</section>
-        <div className="result-toolbar"><div><span className="toolbar-kicker">نتایج شخصی‌سازی‌شده</span><h2>{asPersianNumber(searchFiltered.length)} نتیجه برای <bdi dir="rtl">{intent}</bdi></h2><p>پیشنهادهای اول با شرایط فعلی سازگارند؛ بقیه با تغییرهای لازم همچنان دیده می‌شوند.</p></div><label className="sort-field"><span>مرتب‌سازی</span><select aria-label="مرتب‌سازی دوره‌ها" value={sort} onChange={event => setSort(event.target.value)}><option value="recommended">پیشنهادی</option><option value="price">کمترین قیمت</option><option value="duration">کوتاه‌ترین مدت</option></select><ChevronDown size={15} /></label></div>
+        <div className="result-toolbar"><div><span className="toolbar-kicker">نتایج شخصی‌سازی‌شده</span><h1>{asPersianNumber(searchFiltered.length)} نتیجه برای <bdi dir="rtl">{intent}</bdi></h1><p>پیشنهادهای اول با شرایط فعلی سازگارند؛ بقیه با تغییرهای لازم همچنان دیده می‌شوند.</p></div><label className="sort-field"><span>مرتب‌سازی</span><select aria-label="مرتب‌سازی دوره‌ها" value={sort} onChange={event => setSort(event.target.value)}><option value="recommended">پیشنهادی</option><option value="price">کمترین قیمت</option><option value="duration">کوتاه‌ترین مدت</option></select><ChevronDown size={15} /></label></div>
         <div className="tabs" role="tablist" aria-label="گروه نتایج"><button role="tab" aria-selected={group === 'all'} className={group === 'all' ? 'active' : ''} onClick={() => setGroup('all')}>همه <span>{asPersianNumber(searchFiltered.length)}</span></button>{GROUP_ORDER.slice(0, 3).map(key => <button key={key} role="tab" aria-selected={group === key} className={group === key ? 'active' : ''} onClick={() => setGroup(key)}>{groupName[key]} <span>{asPersianNumber(counts[key])}</span></button>)}</div>
         <div className="result-message"><Info size={17} /><span>{evaluationImportant && unverifiedEvaluationCount > 0 ? <><strong>پوشش Evaluation برای {asPersianNumber(unverifiedEvaluationCount)} گزینهٔ مناسب شرایط فعلی اثبات نشده است.</strong> پیش از خرید، سرفصل و پروژهٔ دوره را از برگزارکننده بررسی کنید.</> : <><strong>رتبه‌ها تضمین کیفیت دوره نیستند.</strong> قیمت، ظرفیت و جزئیات نامطمئن را پیش از ثبت‌نام از منبع بررسی کنید.</>}</span><button onClick={() => setMethodOpen(true)}>چرا؟</button></div>
         <div className="cards-heading"><div><span className="eyebrow">با توجه به شرایط شما</span><h2>{group === 'all' ? 'پیشنهادهای اول' : groupName[group]}</h2></div><span>{asPersianNumber(shown.length)} گزینه</span></div>
